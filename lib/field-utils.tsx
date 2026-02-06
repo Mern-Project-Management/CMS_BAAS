@@ -1,0 +1,102 @@
+import type { FieldType } from './types';
+import {
+  Calendar,
+  Clock,
+  Code,
+  File,
+  Hash,
+  ImageIcon,
+  Link2,
+  List,
+  ToggleLeft as Toggle2,
+  Type,
+} from 'lucide-react';
+
+export const FIELD_TYPES: Record<FieldType, { label: string; description: string }> = {
+  Text: { label: 'Text', description: 'Single or multi-line text' },
+  Number: { label: 'Number', description: 'Integer or decimal numbers' },
+  Boolean: { label: 'Boolean', description: 'True or false value' },
+  Date: { label: 'Date', description: 'Date without time' },
+  DateTime: { label: 'DateTime', description: 'Date with time' },
+  File: { label: 'File', description: 'File upload field' },
+  Image: { label: 'Image', description: 'Image upload field' },
+  JSON: { label: 'JSON', description: 'Structured JSON data' },
+  Relation: { label: 'Relation', description: 'Link to another collection' },
+  Array: { label: 'Array', description: 'Multiple values (list of text items)' },
+};
+
+export function getFieldTypeIcon(type: FieldType) {
+  const iconProps = { className: 'w-4 h-4' };
+  switch (type) {
+    case 'Text':
+      return <Type {...iconProps} />;
+    case 'Number':
+      return <Hash {...iconProps} />;
+    case 'Boolean':
+      return <Toggle2 {...iconProps} />;
+    case 'Date':
+      return <Calendar {...iconProps} />;
+    case 'DateTime':
+      return <Clock {...iconProps} />;
+    case 'File':
+      return <File {...iconProps} />;
+    case 'Image':
+      return <ImageIcon {...iconProps} />;
+    case 'JSON':
+      return <Code {...iconProps} />;
+    case 'Relation':
+      return <Link2 {...iconProps} />;
+    case 'Array':
+      return <List {...iconProps} />;
+    default:
+      return <Type {...iconProps} />;
+  }
+}
+
+export function validateFieldName(name: string): { valid: boolean; error?: string } {
+  if (!name) return { valid: false, error: 'Field name is required' };
+  if (!/^[a-z_][a-z0-9_]*$/.test(name.toLowerCase())) {
+    return {
+      valid: false,
+      error:
+        'Field name must start with a letter or underscore and contain only alphanumeric characters and underscores',
+    };
+  }
+  if (name.length > 255) {
+    return { valid: false, error: 'Field name must be less than 255 characters' };
+  }
+  return { valid: true };
+}
+
+export function validateCollectionName(name: string): { valid: boolean; error?: string } {
+  if (!name) return { valid: false, error: 'Collection name is required' };
+  if (!/^[a-z_][a-z0-9_]*$/.test(name.toLowerCase())) {
+    return { valid: false, error: 'Collection name must start with a letter or underscore' };
+  }
+  if (name.length > 255) {
+    return { valid: false, error: 'Collection name must be less than 255 characters' };
+  }
+  return { valid: true };
+}
+
+export function getValidationRuleLabel(type: string): string {
+  const labels: Record<string, string> = {
+    min: 'Minimum',
+    max: 'Maximum',
+    pattern: 'Pattern',
+    length: 'Length',
+    email: 'Email Format',
+    url: 'URL Format',
+    custom: 'Custom',
+  };
+  return labels[type] || type;
+}
+
+export function formatCollectionName(name: string): string {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+export function formatFieldName(name: string): string {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
