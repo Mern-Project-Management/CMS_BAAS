@@ -19,10 +19,12 @@ type Props = {
   collectionId: string;
   fields: Field[];
   records: RecordRow[];
+  title?: string;
+  hiddenFieldNames?: string[];
   onDelete: () => void;
 };
 
-export function RecordsTable({ collectionId, fields, records, onDelete }: Props) {
+export function RecordsTable({ collectionId, fields, records, title, hiddenFieldNames = [], onDelete }: Props) {
   console.log("records",records)
   const { toast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -49,33 +51,43 @@ export function RecordsTable({ collectionId, fields, records, onDelete }: Props)
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Records</CardTitle>
+        <CardTitle>{title || 'Records'}</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              {fields.map((f) => (
-                <TableHead key={f.id}>{f.display_name}</TableHead>
-              ))}
+              {fields
+                .filter((f) => !hiddenFieldNames.includes(f.name))
+                .map((f) => (
+                  <TableHead key={f.id}>{f.display_name}</TableHead>
+                ))}
               <TableHead className="w-24">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={fields.length + 1} className="text-center text-muted-foreground">
+                <TableCell colSpan={fields.filter((f) => !hiddenFieldNames.includes(f.name)).length + 1} className="text-center text-muted-foreground">
                   No records yet.
                 </TableCell>
               </TableRow>
             ) : (
               records.map((r) => (
                 <TableRow key={r.id}>
-                  {fields.map((f) => (
-                    <TableCell key={f.id}>
-                      {formatValue(r[f.name], f.field_type)}
-                    </TableCell>
-                  ))}
+                  {fields
+                    .filter((f) => !hiddenFieldNames.includes(f.name))
+                    .map((f, idx) => (
+                      <TableCell key={f.id} className="whitespace-nowrap">
+                        {/* Apply layer-wise visual indicators to the first column */}
+                        {idx === 0 && r._depth !== undefined && r._depth > 0 && (
+                          <span className="text-muted-foreground/60 mr-1 font-mono select-none">
+                            {'-'.repeat(r._depth * 2 + 1)}| 
+                          </span>
+                        )}
+                        {formatValue(r, f)}
+                      </TableCell>
+                    ))}
                   <TableCell>
                     <Button
                       variant="ghost"
@@ -96,9 +108,38 @@ export function RecordsTable({ collectionId, fields, records, onDelete }: Props)
   );
 }
 
-function formatValue(value: any, fieldType: string) {
+function resolvePopulatedLabel(obj: any): string {
+  if (!obj || typeof obj !== 'object') return '';
+  
+  // Prioritize specific name fields used in your schema
+  const label = 
+    obj.category_name ||
+    obj.display_name ||
+    obj.name ||
+    obj.title ||
+    obj.label ||
+    obj.id;
+
+  // Recursively resolve parent names to show full path in the table
+  const nestedKey = Object.keys(obj).find(k => k.endsWith('_populated'));
+  if (nestedKey && obj[nestedKey]) {
+    return `${resolvePopulatedLabel(obj[nestedKey])} > ${label}`;
+  }
+
+  return label || 'Unnamed';
+}
+
+function formatValue(record: RecordRow, field: Field) {
+  const value = record[field.name];
   if (value === undefined || value === null) return '';
-  switch (fieldType) {
+
+  if (field.field_type === 'Relation') {
+    const populated = record[`${field.name}_populated`];
+    if (populated) return resolvePopulatedLabel(populated);
+    return record[`${field.name}_label`] ?? String(value);
+  }
+
+  switch (field.field_type) {
     case 'Array':
       if (Array.isArray(value)) {
         if (value.length === 0) return '—';
@@ -130,7 +171,7 @@ function formatValue(value: any, fieldType: string) {
     case 'File':
     case 'Image':
       if (typeof value === 'string' && (value.startsWith('/uploads/') || value.startsWith('http'))) {
-        return <FilePreview url={value} fieldType={fieldType} />;
+        return <FilePreview url={value} fieldType={field.field_type} />;
       }
       return String(value);
     default:

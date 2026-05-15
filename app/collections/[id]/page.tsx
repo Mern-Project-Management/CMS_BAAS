@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { EditFieldDialog } from '@/components/edit-field-dialog';
 import { EditCollectionDialog } from '@/components/edit-collection-dialog';
 import { FieldsList } from '@/components/fields-list';
 import { SchemaPreview } from '@/components/schema-preview';
+import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { RecordForm } from '@/components/record-form';
 import { RecordsTable } from '@/components/records-table';
 import { useToast } from '@/hooks/use-toast';
@@ -31,11 +32,54 @@ export default function CollectionDetailPage() {
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [fieldRefresh, setFieldRefresh] = useState(0);
-  const [records, setRecords] = useState<Array<Record<string, any>>>([]);
+  const [records, setRecords] = useState<Array<{ id: string; [key: string]: any }>>([]);
   const [recordRefresh, setRecordRefresh] = useState(0);
   const [editingField, setEditingField] = useState<Field | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editCollectionDialogOpen, setEditCollectionDialogOpen] = useState(false);
+
+  // Detect if this collection has a hierarchy (a Relation field pointing to self or named 'parent')
+  const parentRelationField = fields.find(
+    (field) =>
+      field.field_type === 'Relation' &&
+      /parent/i.test(`${field.name} ${field.display_name}`)
+  );
+  const parentFieldName = parentRelationField?.name;
+
+  // Transform flat records into a flattened tree for "layer-wise" display
+  const hierarchicalRecords = useMemo(() => {
+    if (!parentFieldName || records.length === 0) return records;
+
+    function buildTree(items: any[], parentId: string | null = null): any[] {
+      return items
+        .filter(item => {
+          const pValue = item[parentFieldName];
+          // Handle both raw IDs and populated objects
+          const pId = typeof pValue === 'object' && pValue !== null ? pValue.id : String(pValue || '');
+          
+          if (parentId === null) return !pValue || pValue === '';
+          return pId === parentId;
+        })
+        .map(item => ({
+          ...item,
+          children: buildTree(items, item.id)
+        }));
+    }
+
+    function flatten(nodes: any[], depth = 0): any[] {
+      let result: any[] = [];
+      for (const node of nodes) {
+        result.push({ ...node, _depth: depth });
+        if (node.children && node.children.length > 0) {
+          result = result.concat(flatten(node.children, depth + 1));
+        }
+      }
+      return result;
+    }
+
+    const tree = buildTree(records);
+    return flatten(tree);
+  }, [records, parentFieldName]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -97,6 +141,7 @@ export default function CollectionDetailPage() {
     try {
       const res = await fetch(`/api/data/${resolvedId}`);
       const json = await res.json();
+      console.log('Fetch records response:', json);
       if (json.success) {
         setRecords(json.data || []);
       } else {
@@ -236,10 +281,7 @@ export default function CollectionDetailPage() {
                   />
                 </div>
 
-                {/* Schema Preview */}
-                {collection && fields.length > 0 && (
-                  <SchemaPreview collection={collection} fields={fields} />
-                )}
+             
               </>
             )}
 
@@ -258,56 +300,64 @@ export default function CollectionDetailPage() {
                     fields={fields}
                     onCreated={() => setRecordRefresh((p) => p + 1)}
                   />
-                  <RecordsTable
-                    collectionId={collectionId}
-                    fields={fields}
-                    records={records}
-                    onDelete={() => setRecordRefresh((p) => p + 1)}
-                  />
+
+                  {parentFieldName ? (
+                    <div className="space-y-10 pt-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-primary">Parent Table</h3>
+                          <p className="text-sm text-muted-foreground">Main root-level items without parents.</p>
+                        </div>
+                        <RecordsTable
+                          collectionId={collectionId}
+                          fields={fields}
+                          title="Root Records"
+                          records={hierarchicalRecords.filter(r => r._depth === 0)}
+                          hiddenFieldNames={[parentFieldName]}
+                          onDelete={() => setRecordRefresh((p) => p + 1)}
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-primary">Sub-Child Table</h3>
+                          <p className="text-sm text-muted-foreground">Items directly under root categories.</p>
+                        </div>
+                        <RecordsTable
+                          collectionId={collectionId}
+                          fields={fields}
+                          title="Child Records"
+                          records={hierarchicalRecords.filter(r => r._depth === 1)}
+                          onDelete={() => setRecordRefresh((p) => p + 1)}
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-primary">Sub-Sub-Child Table</h3>
+                          <p className="text-sm text-muted-foreground">Deeply nested items with full parent paths.</p>
+                        </div>
+                        <RecordsTable
+                          collectionId={collectionId}
+                          fields={fields}
+                          title="Deeply Nested Records"
+                          records={hierarchicalRecords.filter(r => r._depth > 1)}
+                          onDelete={() => setRecordRefresh((p) => p + 1)}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <RecordsTable
+                      collectionId={collectionId}
+                      fields={fields}
+                      records={records}
+                      onDelete={() => setRecordRefresh((p) => p + 1)}
+                    />
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Collection Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Collection Information</CardTitle>
-                <CardDescription>
-                  Details about this collection
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase">
-                      Collection Name
-                    </p>
-                    <p className="font-mono text-sm">{collection?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase">
-                      Display Name
-                    </p>
-                    <p className="font-mono text-sm">{collection?.display_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase">
-                      Total Fields
-                    </p>
-                    <p className="font-mono text-sm">{fields.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase">
-                      Created At
-                    </p>
-                    <p className="font-mono text-sm">
-                      {collection?.created_at &&
-                        new Date(collection.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
       </div>

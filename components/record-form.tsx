@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileUpload } from '@/components/file-upload';
+import { TipTapEditor } from '@/components/tiptap-editor';
 import { useToast } from '@/hooks/use-toast';
+import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Field } from '@/lib/types';
 
@@ -175,6 +177,43 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
             required={field.is_required}
           />
         );
+      case 'Editor':
+        return (
+          <TipTapEditor
+            content={value || ''}
+            onChange={(html) => updateField(field.name, html)}
+            placeholder={`Enter ${field.display_name.toLowerCase()}...`}
+          />
+        );
+      case 'Relation':
+        if (!field.relation_to_collection) {
+          console.warn(`Relation field '${field.name}' has no relation_to_collection configured.`);
+          return (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+              Relation target collection is not configured for this field.
+            </div>
+          );
+        }
+
+        const isSelfRelation = field.relation_to_collection === collectionId;
+
+        return (
+          <HierarchicalSelector
+            collectionId={field.relation_to_collection}
+            parentFieldName={isSelfRelation ? field.name : "parent_id"}
+            value={value}
+            onSelect={(selectedId, fullPath) => {
+              updateField(field.name, selectedId);
+              if (fullPath && Array.isArray(fullPath)) {
+                console.log(`Selected ID: ${selectedId}`);
+                console.log('Full Path:', fullPath.map((item: any) => item.display_name || item.name || item.category_name || item.id).join(' > '));
+              }
+              // If you wanted to store the full path, you'd need another field (e.g., JSON or Array)
+              // For example: updateField(`${field.name}_path`, fullPath);
+            }}
+            placeholder={`Select ${field.display_name}...`}
+          />
+        );
       default:
         return (
           <Input
@@ -207,4 +246,3 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
     </form>
   );
 }
-

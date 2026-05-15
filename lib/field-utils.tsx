@@ -10,6 +10,7 @@ import {
   List,
   ToggleLeft as Toggle2,
   Type,
+  PenTool,
 } from 'lucide-react';
 
 export const FIELD_TYPES: Record<FieldType, { label: string; description: string }> = {
@@ -23,6 +24,7 @@ export const FIELD_TYPES: Record<FieldType, { label: string; description: string
   JSON: { label: 'JSON', description: 'Structured JSON data' },
   Relation: { label: 'Relation', description: 'Link to another collection' },
   Array: { label: 'Array', description: 'Multiple values (list of text items)' },
+  Editor: { label: 'Editor', description: 'Rich text editor with formatting' },
 };
 
 export function getFieldTypeIcon(type: FieldType) {
@@ -48,6 +50,8 @@ export function getFieldTypeIcon(type: FieldType) {
       return <Link2 {...iconProps} />;
     case 'Array':
       return <List {...iconProps} />;
+    case 'Editor':
+      return <PenTool {...iconProps} />;
     default:
       return <Type {...iconProps} />;
   }

@@ -29,7 +29,7 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             onClick={toggle}
-            className="hidden md:flex h-9 w-9 rounded-lg"
+            className="h-9 w-9 rounded-lg"
             title="Toggle Sidebar"
           >
             <Menu className="h-5 w-5" />
@@ -42,7 +42,7 @@ export function Navbar() {
         {/* Right: User Info & Actions */}
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           <div className="hidden sm:flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-primary/10 px-3 py-1.5">
               <User className="h-4 w-4 text-foreground/60" />
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-medium text-foreground">{user.username}</span>

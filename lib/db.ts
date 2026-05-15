@@ -9,7 +9,7 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function oid(id: string) {
+export function oid(id: string) {
   try {
     return new ObjectId(id);
   } catch {
@@ -17,12 +17,12 @@ function oid(id: string) {
   }
 }
 
-function normalizeDocId<T extends { _id: ObjectId }>(doc: T) {
+export function normalizeDocId<T extends { _id: ObjectId }>(doc: T) {
   const { _id, ...rest } = doc;
   return { id: _id.toString(), ...rest };
 }
 
-async function getDb() {
+export async function getDb() {
   const client = await mongoClientPromise;
   return client.db(dbName);
 }
@@ -71,7 +71,7 @@ export async function getCollectionByName(name: string) {
 export async function getCollection(id: string) {
   try {
     const _id = oid(id);
-    if (!_id) return { data: null, error: new Error('Invalid collection id') };
+    if (!_id) return { data: null, error: null };
 
     const db = await getDb();
     const collectionsCol = db.collection<Omit<Collection, 'id'> & { _id: ObjectId }>('collections');
@@ -350,11 +350,87 @@ export async function reorderFields(fields: Array<{ id: string; field_order: num
 
 // ----- Records (dynamic data) -----
 
-export async function getRecords(collectionName: string, limit = 100) {
+function resolveRelationLabel(record: any) {
+  return (
+    record.category_name ||
+    record.display_name ||
+    record.name ||
+    record.title ||
+    record.category_slug ||
+    record.slug ||
+    record.id ||
+    String(record._id || '')
+  );
+}
+
+export async function populateRelationLabels(records: any[], fields: Field[]) {
+  try {
+    if (!records || !Array.isArray(records) || records.length === 0) {
+      return records;
+    }
+
+    const relationFields = fields.filter(
+      (field): field is Field & { relation_to_collection: string } =>
+        field.field_type === 'Relation' && typeof field.relation_to_collection === 'string' && field.relation_to_collection !== ''
+    );
+
+    if (relationFields.length === 0) {
+      return records;
+    }
+
+    const db = await getDb();
+
+    for (const field of relationFields) {
+      const relatedIds = Array.from(
+        new Set(
+          records
+            .map((record) => record[field.name])
+            .filter((value) => value !== undefined && value !== null)
+            .map(String)
+        )
+      );
+
+      const validOids = relatedIds
+        .map((id) => oid(id))
+        .filter((value): value is ObjectId => value !== null);
+
+      if (validOids.length === 0) {
+        continue;
+      }
+
+      const relatedDocs = await db
+        .collection(field.relation_to_collection)
+        .find({ _id: { $in: validOids } })
+        .toArray();
+
+      const relatedMap = relatedDocs.reduce<Record<string, any>>((map, doc) => {
+        const normalized = normalizeDocId(doc as any);
+        map[normalized.id] = normalized;
+        return map;
+      }, {});
+
+      for (const record of records) {
+        const rawValue = record[field.name];
+        const lookupId = rawValue ? String(rawValue) : null;
+        const related = lookupId ? relatedMap[lookupId] : null;
+
+        record[`${field.name}_populated`] = related;
+        record[`${field.name}_label`] = related ? resolveRelationLabel(related) : lookupId;
+      }
+    }
+
+    return records;
+  } catch (error) {
+    console.error('Error populating relation labels:', error);
+    return records;
+  }
+}
+
+export async function getRecords(collectionName: string, limit = 100, filter: Record<string, any> = {}) {
   try {
     const db = await getDb();
     const docs = await db.collection(collectionName)
-      .find({})
+      .find(filter)
       .sort({ created_at: -1 })
       .limit(limit)
       .toArray();

@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRecord, getCollectionFields, getRecords, getCollection, getCollectionByName } from '@/lib/db';
+import { 
+  getCollection, 
+  getCollectionByName, 
+  getRecords, 
+  populateRelationLabels, 
+  getCollectionFields,
+  getDb,
+  normalizeDocId,
+  oid
+} from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import type { ApiResponse } from '@/lib/types';
-import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
@@ -12,48 +20,80 @@ export async function GET(
     await requireAuth();
     const { collectionId } = await params;
 
-    // Resolve collection name: if it's an ObjectId, get the collection by ID to get its name
-    let collectionName = collectionId;
-    let actualCollectionId = collectionId;
-    if (ObjectId.isValid(collectionId)) {
-      const { data: collection } = await getCollection(collectionId);
-      if (!collection) {
-        return NextResponse.json(
-          { success: false, error: 'Collection not found' } as ApiResponse<null>,
-          { status: 404 }
-        );
-      }
-      collectionName = collection.name;
-      actualCollectionId = collection.id;
-    } else {
-      // If it's not an ObjectId, try to get by name to get the ID
-      const { data: collection } = await getCollectionByName(collectionId);
-      if (!collection) {
-        return NextResponse.json(
-          { success: false, error: 'Collection not found' } as ApiResponse<null>,
-          { status: 404 }
-        );
-      }
-      actualCollectionId = collection.id;
+    // 1. Resolve the collection name
+    let { data: collection } = await getCollection(collectionId);
+    
+    // If not found by ID, try finding by name (slug)
+    if (!collection) {
+      const { data: byName } = await getCollectionByName(collectionId);
+      collection = byName;
     }
 
-    const { data, error } = await getRecords(collectionName);
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch records' } as ApiResponse<null>,
-        { status: 500 }
-      );
+    if (!collection) {
+      return NextResponse.json({ success: false, error: 'Collection not found' }, { status: 404 });
     }
-    return NextResponse.json(
-      { success: true, data } as ApiResponse<typeof data>,
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Records GET error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' } as ApiResponse<null>,
-      { status: 500 }
-    );
+
+    // 2. Extract filters from Query Parameters
+    // Example: ?category_id=123 becomes { category_id: "123" }
+    const searchParams = request.nextUrl.searchParams;
+    const filters: Record<string, any> = {};
+    
+    searchParams.forEach((value, key) => {
+      if (key !== 'limit' && key !== 'offset') {
+        filters[key] = value;
+      }
+    });
+
+    // 3. Fetch data with filters
+    const limit = parseInt(searchParams.get('limit') || '100');
+    const { data: records } = await getRecords(collection.name, limit, filters);
+
+    // 4. Populate relational fields with full objects and labels
+    const db = await getDb();
+    const { data: fields } = await getCollectionFields(collection.id);
+    const basePopulated = await populateRelationLabels(records || [], fields || []);
+
+    const populatedRecords = await Promise.all((basePopulated || []).map(async (record: any) => {
+      for (const field of (fields || [])) {
+        if (field.field_type === 'Relation' && field.relation_to_collection && record[field.name]) {
+          try {
+            const targetOid = oid(record[field.name]);
+            if (targetOid) {
+              const relatedDoc = await db.collection(field.relation_to_collection).findOne({ _id: targetOid });
+              if (relatedDoc) {
+                const populated = normalizeDocId(relatedDoc);
+                
+                // Deep population for hierarchy (self-relations)
+                // This allows seeing grandparent info for Sub-Sub-Children
+                if (field.relation_to_collection === collection.name && populated[field.name]) {
+                  const gpOid = oid(populated[field.name]);
+                  if (gpOid) {
+                    const gpDoc = await db.collection(field.relation_to_collection).findOne({ _id: gpOid });
+                    if (gpDoc) {
+                      populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
+                    }
+                  }
+                }
+                
+                record[`${field.name}_populated`] = populated;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+      return record;
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: populatedRecords,
+    } as ApiResponse<any>, { status: 200 });
+
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Internal server error',
+    }, { status: 500 });
   }
 }
 
@@ -64,74 +104,72 @@ export async function POST(
   try {
     await requireAuth();
     const { collectionId } = await params;
-    const payload = await request.json();
 
-    // Resolve collection name: if it's an ObjectId, get the collection by ID to get its name
-    let collectionName = collectionId;
-    let actualCollectionId = collectionId;
-    if (ObjectId.isValid(collectionId)) {
-      const { data: collection } = await getCollection(collectionId);
-      if (!collection) {
-        return NextResponse.json(
-          { success: false, error: 'Collection not found' } as ApiResponse<null>,
-          { status: 404 }
-        );
-      }
-      collectionName = collection.name;
-      actualCollectionId = collection.id;
-    } else {
-      // If it's not an ObjectId, try to get by name to get the ID
-      const { data: collection } = await getCollectionByName(collectionId);
-      if (!collection) {
-        return NextResponse.json(
-          { success: false, error: 'Collection not found' } as ApiResponse<null>,
-          { status: 404 }
-        );
-      }
-      actualCollectionId = collection.id;
+    // 1. Resolve the collection name
+    let { data: collection } = await getCollection(collectionId);
+    
+    if (!collection) {
+      const { data: byName } = await getCollectionByName(collectionId);
+      collection = byName;
     }
 
-    // Basic required check against field definitions
-    const { data: fields } = await getCollectionFields(actualCollectionId);
-    if (fields) {
-      for (const f of fields) {
-        if (!f.is_required) continue;
-        const v = payload[f.name];
-        if (f.field_type === 'Array') {
-          const isArray = Array.isArray(v);
-          if (!isArray || v.length === 0) {
-            return NextResponse.json(
-              { success: false, error: `${f.display_name} is required (add at least one item)` } as ApiResponse<null>,
-              { status: 400 }
-            );
+    if (!collection) {
+      return NextResponse.json({ success: false, error: 'Collection not found' }, { status: 404 });
+    }
+
+    // 2. Parse request body
+    const body = await request.json();
+    const db = await getDb();
+    
+    // 3. Insert record with timestamps
+    const now = new Date().toISOString();
+    const doc = {
+      ...body,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const result = await db.collection(collection.name).insertOne(doc);
+    const normalizedRecord: any = normalizeDocId({ ...doc, _id: result.insertedId });
+
+    // Populate relational data for the response
+    const { data: fields } = await getCollectionFields(collection.id);
+    for (const field of (fields || [])) {
+      if (field.field_type === 'Relation' && field.relation_to_collection && normalizedRecord[field.name]) {
+        try {
+          const targetOid = oid(normalizedRecord[field.name]);
+          if (targetOid) {
+            const relatedDoc = await db.collection(field.relation_to_collection).findOne({ _id: targetOid });
+            if (relatedDoc) {
+              const populated = normalizeDocId(relatedDoc);
+              
+              // Deep population for hierarchy (self-relations)
+              if (field.relation_to_collection === collection.name && populated[field.name]) {
+                const gpOid = oid(populated[field.name]);
+                if (gpOid) {
+                  const gpDoc = await db.collection(field.relation_to_collection).findOne({ _id: gpOid });
+                  if (gpDoc) {
+                    populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
+                  }
+                }
+              }
+              
+              normalizedRecord[`${field.name}_populated`] = populated;
+            }
           }
-        } else if (v === undefined || v === null || v === '') {
-          return NextResponse.json(
-            { success: false, error: `${f.display_name} is required` } as ApiResponse<null>,
-            { status: 400 }
-          );
-        }
+        } catch (e) {}
       }
     }
 
-    const { data, error } = await createRecord(collectionName, payload);
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to create record' } as ApiResponse<null>,
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      success: true,
+      data: normalizedRecord,
+    } as ApiResponse<any>, { status: 201 });
 
-    return NextResponse.json(
-      { success: true, data, message: 'Record created successfully' } as ApiResponse<typeof data>,
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('Records POST error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' } as ApiResponse<null>,
-      { status: 500 }
-    );
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Internal server error',
+    }, { status: 500 });
   }
 }
-

@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,12 +14,19 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { FieldTypeSelector } from './field-type-selector';
 import { FieldRulesPanel } from './field-rules-panel';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { FieldType, Field } from '@/lib/types';
+import type { FieldType, Field, Collection } from '@/lib/types';
 
 interface CreateFieldDialogProps {
   collectionId: string;
@@ -29,6 +36,7 @@ interface CreateFieldDialogProps {
 export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [formData, setFormData] = useState<Partial<Field>>({
     collection_id: collectionId,
     name: '',
@@ -39,8 +47,27 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
     is_unique: false,
     is_encrypted: false,
     validation_rules: [],
+    relation_to_collection: '',
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      fetchCollections();
+    }
+  }, [open]);
+
+  async function fetchCollections() {
+    try {
+      const response = await fetch('/api/collections');
+      const result = await response.json();
+      if (result.success) {
+        setCollections(result.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch collections', error);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +108,7 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
         is_unique: false,
         is_encrypted: false,
         validation_rules: [],
+        relation_to_collection: '',
       });
       setOpen(false);
 
@@ -152,6 +180,29 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
               onChange={(type) => setFormData({ ...formData, field_type: type })}
             />
           </div>
+
+          {formData.field_type === 'Relation' && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+              <Label>Relation to Collection</Label>
+              <Select
+                value={formData.relation_to_collection}
+                onValueChange={(val) =>
+                  setFormData({ ...formData, relation_to_collection: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target collection..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {collections.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.display_name} ({c.name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="description">Description (optional)</Label>

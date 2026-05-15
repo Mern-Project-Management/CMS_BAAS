@@ -15,7 +15,7 @@ export function Sidebar() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const { isSuperadmin } = useAuth();
-  const { isOpen } = useSidebar();
+  const { isOpen, toggle } = useSidebar();
 
   useEffect(() => {
     (async () => {
@@ -38,12 +38,20 @@ export function Sidebar() {
   }
 
   return (
-    <aside
-      className={cn(
-        'hidden md:flex h-screen flex-col flex-shrink-0 border-r border-border bg-sidebar transition-all duration-300 ease-in-out',
-        isOpen ? 'w-64' : 'w-20'
-      )}
-    >
+    <>
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 md:hidden',
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={toggle}
+      />
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-sidebar transition-all duration-300 ease-in-out md:relative md:h-screen',
+          isOpen ? 'translate-x-0 w-full md:w-64' : '-translate-x-full md:translate-x-0 w-0 md:w-20'
+        )}
+      >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-4 flex-shrink-0">
         <div className={cn('flex items-center gap-3', !isOpen && 'justify-center')}>
@@ -83,11 +91,11 @@ export function Sidebar() {
                   key={c.id}
                   href={`/collections/${c.id}?collectionName=${c.name}`}
                   className={cn(
-                    'group flex items-center justify-between rounded-lg transition-all duration-200',
+                    'group flex items-center text-foreground justify-between rounded-lg transition-all duration-200',
                     isOpen ? 'px-3 py-2.5 gap-2' : 'px-3 py-2.5 justify-center',
                     'hover:bg-accent',
                     isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'bg-primary text-primary-foreground hover:text-primary-foreground shadow-sm'
                       : 'text-foreground/80 hover:text-foreground'
                   )}
                   title={!isOpen ? c.display_name : undefined}
@@ -103,7 +111,7 @@ export function Sidebar() {
                         {c.icon}
                       </span>
                     )}
-                    {isOpen && <span className="truncate text-sm font-medium">{c.display_name}</span>}
+                    {isOpen && <span className="truncate text-sm hover:text-black font-medium">{c.display_name}</span>}
                   </span>
                   {isOpen && c.fieldCount !== undefined && c.fieldCount !== null && (
                     <span
@@ -111,7 +119,7 @@ export function Sidebar() {
                         'ml-2 px-2 py-0.5 rounded-md text-xs font-semibold flex-shrink-0',
                         isActive
                           ? 'bg-primary-foreground/20 text-primary-foreground'
-                          : 'bg-accent text-foreground/60 group-hover:bg-accent group-hover:text-foreground'
+                          : 'bg-accent text-foreground/60 group-hover:bg-accent group-hover:text-black'
                       )}
                     >
                       {c.fieldCount}
@@ -141,5 +149,6 @@ export function Sidebar() {
         </div>
       )}
     </aside>
+    </>
   );
 }

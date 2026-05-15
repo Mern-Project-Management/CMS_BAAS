@@ -13,11 +13,18 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { FieldTypeSelector } from './field-type-selector';
 import { FieldRulesPanel } from './field-rules-panel';
 import { useToast } from '@/hooks/use-toast';
-import type { FieldType, Field } from '@/lib/types';
+import type { FieldType, Field, Collection } from '@/lib/types';
 
 interface EditFieldDialogProps {
   field: Field | null;
@@ -28,6 +35,7 @@ interface EditFieldDialogProps {
 
 export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFieldDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [formData, setFormData] = useState<Partial<Field>>({
     name: '',
     display_name: '',
@@ -37,6 +45,7 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
     is_unique: false,
     is_encrypted: false,
     validation_rules: [],
+    relation_to_collection: '',
   });
   const { toast } = useToast();
 
@@ -51,9 +60,23 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
         is_unique: field.is_unique,
         is_encrypted: field.is_encrypted,
         validation_rules: field.validation_rules || [],
+        relation_to_collection: field.relation_to_collection || '',
       });
+      fetchCollections();
     }
   }, [field]);
+
+  async function fetchCollections() {
+    try {
+      const response = await fetch('/api/collections');
+      const result = await response.json();
+      if (result.success) {
+        setCollections(result.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch collections', error);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -149,6 +172,29 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
               onChange={(type) => setFormData({ ...formData, field_type: type })}
             />
           </div>
+
+          {formData.field_type === 'Relation' && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+              <Label>Relation to Collection</Label>
+              <Select
+                value={formData.relation_to_collection}
+                onValueChange={(val) =>
+                  setFormData({ ...formData, relation_to_collection: val })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target collection..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {collections.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.display_name} ({c.name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="description">Description (optional)</Label>

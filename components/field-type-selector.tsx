@@ -23,7 +23,7 @@ const FIELD_GROUPS = {
   'Basic': ['Text', 'Number', 'Boolean'],
   'Date & Time': ['Date', 'DateTime'],
   'Media': ['File', 'Image'],
-  'Advanced': ['JSON', 'Relation', 'Array'],
+  'Advanced': ['JSON', 'Relation', 'Array', 'Editor'],
 } as const;
 
 export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
@@ -32,7 +32,7 @@ export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between bg-transparent"
+          className="w-full justify-between bg-transparent text-black"
         >
           <span className="flex items-center gap-2">
             {getFieldTypeIcon(value)}
