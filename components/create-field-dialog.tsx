@@ -232,7 +232,12 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Field'}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                  Creating…
+                </span>
+              ) : 'Create Field'}
             </Button>
           </div>
         </form>

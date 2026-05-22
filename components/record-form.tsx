@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileUpload } from '@/components/file-upload';
+import { MultiImageUpload } from '@/components/multi-image-upload';
 import { TipTapEditor } from '@/components/tiptap-editor';
 import { useToast } from '@/hooks/use-toast';
 import { HierarchicalSelector } from '@/components/hierarchical-selector';
@@ -22,6 +23,7 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formKey, setFormKey] = useState(0);
 
   function updateField(name: string, value: any) {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -38,6 +40,9 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
         if (field.field_type === 'Array') {
           const arr = ensureArray(v);
           payload[field.name] = arr.filter((s) => s.trim() !== '');
+        } else if (field.field_type === 'ImageArray') {
+          // Already an array of URL strings — store as-is
+          payload[field.name] = Array.isArray(v) ? v.filter(Boolean) : [];
         } else {
           payload[field.name] = v;
         }
@@ -53,6 +58,7 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
       }
       toast({ title: 'Record created' });
       setFormData({});
+      setFormKey((prev) => prev + 1);
       onCreated();
     } catch (err) {
       toast({
@@ -177,6 +183,14 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
             required={field.is_required}
           />
         );
+      case 'ImageArray':
+        return (
+          <MultiImageUpload
+            value={Array.isArray(formData[field.name]) ? formData[field.name] : []}
+            onChange={(urls) => updateField(field.name, urls)}
+            required={field.is_required}
+          />
+        );
       case 'Editor':
         return (
           <TipTapEditor
@@ -227,9 +241,18 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form 
+      key={formKey} 
+      className="space-y-6" 
+      onSubmit={handleSubmit}
+      autoComplete="off"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {fields.map((field) => (
-        <div key={field.id} className="space-y-2">
+        <div 
+          key={field.id} 
+          className={`space-y-2 ${['Editor', 'JSON', 'Textarea', 'File', 'Image', 'ImageArray', 'Array'].includes(field.field_type) ? 'md:col-span-2' : ''}`}
+        >
           {field.field_type !== 'Boolean' && (
             <label className="text-sm font-medium">
               {field.display_name} {field.is_required && <span className="text-destructive">*</span>}
@@ -239,9 +262,15 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
           {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
         </div>
       ))}
+      </div>
 
-      <Button type="submit" disabled={submitting}>
-        {submitting ? 'Saving...' : 'Create Record'}
+      <Button type="submit" disabled={submitting} className="w-full sm:w-auto mt-4 px-8 shadow-sm">
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+            Saving…
+          </span>
+        ) : 'Create Record'}
       </Button>
     </form>
   );

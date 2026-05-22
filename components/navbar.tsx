@@ -29,12 +29,12 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             onClick={toggle}
-            className="h-9 w-9 rounded-lg"
+            className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary"
             title="Toggle Sidebar"
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-primary">
             Schema Builder
           </h1>
         </div>
@@ -42,11 +42,11 @@ export function Navbar() {
         {/* Right: User Info & Actions */}
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           <div className="hidden sm:flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-primary/10 px-3 py-1.5">
-              <User className="h-4 w-4 text-foreground/60" />
+            <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5">
+              <User className="h-4 w-4 text-primary/60" />
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-medium text-foreground">{user.username}</span>
-                <span className="text-xs text-foreground/60 capitalize">{user.role}</span>
+                <span className="text-xs text-primary/60 capitalize">{user.role}</span>
               </div>
             </div>
             {user.email && (
@@ -59,7 +59,7 @@ export function Navbar() {
             variant="outline"
             size="sm"
             onClick={logout}
-            className="text-xs sm:text-sm bg-transparent"
+            className="text-xs sm:text-sm"
           >
             <LogOut className="h-4 w-4 mr-1 sm:mr-2" />
             <span className="hidden xs:inline">Logout</span>

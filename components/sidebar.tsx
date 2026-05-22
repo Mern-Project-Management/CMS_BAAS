@@ -74,8 +74,8 @@ export function Sidebar() {
       {/* Collections List */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {loading ? (
-          <div className={cn('flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground/60', !isOpen && 'justify-center')}>
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className={cn('flex items-center gap-2.5 px-3 py-2.5 text-sm text-primary/70', !isOpen && 'justify-center')}>
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
             {isOpen && <span className="font-medium">Loading...</span>}
           </div>
         ) : collections.length === 0 ? (

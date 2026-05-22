@@ -104,8 +104,8 @@ export function FileUpload({ field, value, onChange, required }: Props) {
           >
             {uploading ? (
               <>
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Uploading...</span>
+                <div className="w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                <span className="text-sm text-primary/70 font-medium">Uploading…</span>
               </>
             ) : (
               <>

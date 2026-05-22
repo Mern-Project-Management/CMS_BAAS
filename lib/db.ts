@@ -324,21 +324,36 @@ export async function reorderFields(fields: Array<{ id: string; field_order: num
     const db = await getDb();
     const fieldsCol = db.collection('fields');
 
+    // Try to find one doc to detect _id type stored in DB
+    const sample = await fieldsCol.findOne({});
+    const idIsObjectId = sample && sample._id instanceof ObjectId;
+
+    console.log('[reorderFields] _id type in DB:', idIsObjectId ? 'ObjectId' : 'string/other');
+
     const ops = fields
       .map((f) => {
-        const _id = oid(f.id);
-        if (!_id) return null;
+        // Build filter that works for both ObjectId and string _id
+        const objectId = oid(f.id);
+        const filter = idIsObjectId && objectId
+          ? { _id: objectId }
+          : { _id: f.id as any };
+
         return {
           updateOne: {
-            filter: { _id },
+            filter,
             update: { $set: { field_order: f.field_order, updated_at: nowIso() } },
           },
         };
-      })
-      .filter(Boolean) as any[];
+      });
+
+    console.log('[reorderFields] running bulkWrite with', ops.length, 'ops');
 
     if (ops.length > 0) {
-      await fieldsCol.bulkWrite(ops, { ordered: false });
+      const result = await fieldsCol.bulkWrite(ops, { ordered: false });
+      console.log('[reorderFields] bulkWrite result:', {
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
+      });
     }
 
     return { error: null as null };
@@ -414,8 +429,9 @@ export async function populateRelationLabels(records: any[], fields: Field[]) {
         const lookupId = rawValue ? String(rawValue) : null;
         const related = lookupId ? relatedMap[lookupId] : null;
 
-        record[`${field.name}_populated`] = related;
-        record[`${field.name}_label`] = related ? resolveRelationLabel(related) : lookupId;
+        record[`${field.name}_populated`] = related ?? null;
+        // Only set a label if we actually found the related doc — never expose raw IDs
+        record[`${field.name}_label`] = related ? resolveRelationLabel(related) : null;
       }
     }
 

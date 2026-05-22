@@ -185,7 +185,12 @@ export function CreateCollectionDialog({ onSuccess }: CreateCollectionDialogProp
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Collection'}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                  Creating…
+                </span>
+              ) : 'Create Collection'}
             </Button>
           </div>
         </form>

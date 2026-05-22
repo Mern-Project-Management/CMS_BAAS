@@ -116,9 +116,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    console.log('[reorder] received payload:', JSON.stringify(body));
+
     const { error } = await reorderFields(body);
 
     if (error) {
+      console.error('[reorder] reorderFields error:', error);
       return NextResponse.json(
         { success: false, error: 'Failed to reorder fields' } as ApiResponse<null>,
         { status: 500 }

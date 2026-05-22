@@ -22,7 +22,7 @@ interface FieldTypeSelectorProps {
 const FIELD_GROUPS = {
   'Basic': ['Text', 'Number', 'Boolean'],
   'Date & Time': ['Date', 'DateTime'],
-  'Media': ['File', 'Image'],
+  'Media': ['File', 'Image', 'ImageArray'],
   'Advanced': ['JSON', 'Relation', 'Array', 'Editor'],
 } as const;
 

@@ -15,7 +15,7 @@ import { RecordForm } from '@/components/record-form';
 import { RecordsTable } from '@/components/records-table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-client';
-import { ChevronLeft, Loader2, Edit2 } from 'lucide-react';
+import { ChevronLeft, Edit2 } from 'lucide-react';
 import type { Collection, Field } from '@/lib/types';
 
 export default function CollectionDetailPage() {
@@ -50,19 +50,34 @@ export default function CollectionDetailPage() {
   const hierarchicalRecords = useMemo(() => {
     if (!parentFieldName || records.length === 0) return records;
 
+    // Capture as const so TypeScript knows it's a string inside nested functions
+    const parentField: string = parentFieldName;
+
+    // Build a set of all IDs present in the current dataset
+    const allIds = new Set(records.map(r => r.id));
+
+    function getRawParentId(item: any): string | null {
+      const pValue = item[parentField];
+      if (!pValue) return null;
+      const id = typeof pValue === 'object' && pValue !== null
+        ? String(pValue.id || '')
+        : String(pValue);
+      return id || null;
+    }
+
     function buildTree(items: any[], parentId: string | null = null): any[] {
       return items
         .filter(item => {
-          const pValue = item[parentFieldName];
-          // Handle both raw IDs and populated objects
-          const pId = typeof pValue === 'object' && pValue !== null ? pValue.id : String(pValue || '');
-          
-          if (parentId === null) return !pValue || pValue === '';
-          return pId === parentId;
+          const pid = getRawParentId(item);
+          if (parentId === null) {
+            // Root: no parent value, or parent ID not found in this dataset
+            return !pid || !allIds.has(pid);
+          }
+          return pid === parentId;
         })
         .map(item => ({
           ...item,
-          children: buildTree(items, item.id)
+          children: buildTree(items, item.id),
         }));
     }
 
@@ -70,15 +85,14 @@ export default function CollectionDetailPage() {
       let result: any[] = [];
       for (const node of nodes) {
         result.push({ ...node, _depth: depth });
-        if (node.children && node.children.length > 0) {
+        if (node.children?.length > 0) {
           result = result.concat(flatten(node.children, depth + 1));
         }
       }
       return result;
     }
 
-    const tree = buildTree(records);
-    return flatten(tree);
+    return flatten(buildTree(records));
   }, [records, parentFieldName]);
 
   useEffect(() => {
@@ -159,7 +173,10 @@ export default function CollectionDetailPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <span className="text-sm text-primary/70 font-medium">Loading…</span>
+        </div>
       </div>
     );
   }
@@ -205,7 +222,9 @@ export default function CollectionDetailPage() {
                   )}
                 </div>
               ) : (
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
               )}
             </div>
             {isSuperadmin && collection && (
@@ -232,8 +251,11 @@ export default function CollectionDetailPage() {
           />
         )}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+              <span className="text-sm text-primary/70 font-medium">Loading fields…</span>
+            </div>
           </div>
         ) : (
           <div className="space-y-8">
@@ -263,6 +285,7 @@ export default function CollectionDetailPage() {
                           setEditingField(field);
                           setEditDialogOpen(true);
                         }}
+                        onReorder={() => setFieldRefresh((prev) => prev + 1)}
                       />
                     </CardContent>
                   </Card>
@@ -315,6 +338,7 @@ export default function CollectionDetailPage() {
                           records={hierarchicalRecords.filter(r => r._depth === 0)}
                           hiddenFieldNames={[parentFieldName]}
                           onDelete={() => setRecordRefresh((p) => p + 1)}
+                          onUpdate={() => setRecordRefresh((p) => p + 1)}
                         />
                       </div>
 
@@ -329,6 +353,7 @@ export default function CollectionDetailPage() {
                           title="Child Records"
                           records={hierarchicalRecords.filter(r => r._depth === 1)}
                           onDelete={() => setRecordRefresh((p) => p + 1)}
+                          onUpdate={() => setRecordRefresh((p) => p + 1)}
                         />
                       </div>
 
@@ -343,6 +368,7 @@ export default function CollectionDetailPage() {
                           title="Deeply Nested Records"
                           records={hierarchicalRecords.filter(r => r._depth > 1)}
                           onDelete={() => setRecordRefresh((p) => p + 1)}
+                          onUpdate={() => setRecordRefresh((p) => p + 1)}
                         />
                       </div>
                     </div>
@@ -352,6 +378,7 @@ export default function CollectionDetailPage() {
                       fields={fields}
                       records={records}
                       onDelete={() => setRecordRefresh((p) => p + 1)}
+                      onUpdate={() => setRecordRefresh((p) => p + 1)}
                     />
                   )}
                 </CardContent>

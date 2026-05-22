@@ -20,7 +20,8 @@ export const FIELD_TYPES: Record<FieldType, { label: string; description: string
   Date: { label: 'Date', description: 'Date without time' },
   DateTime: { label: 'DateTime', description: 'Date with time' },
   File: { label: 'File', description: 'File upload field' },
-  Image: { label: 'Image', description: 'Image upload field' },
+  Image: { label: 'Image', description: 'Single image upload' },
+  ImageArray: { label: 'Image Array', description: 'Multiple images upload (gallery)' },
   JSON: { label: 'JSON', description: 'Structured JSON data' },
   Relation: { label: 'Relation', description: 'Link to another collection' },
   Array: { label: 'Array', description: 'Multiple values (list of text items)' },
@@ -43,6 +44,8 @@ export function getFieldTypeIcon(type: FieldType) {
     case 'File':
       return <File {...iconProps} />;
     case 'Image':
+      return <ImageIcon {...iconProps} />;
+    case 'ImageArray':
       return <ImageIcon {...iconProps} />;
     case 'JSON':
       return <Code {...iconProps} />;

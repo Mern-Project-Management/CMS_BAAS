@@ -224,7 +224,12 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Field'}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                  Updating…
+                </span>
+              ) : 'Update Field'}
             </Button>
           </div>
         </form>

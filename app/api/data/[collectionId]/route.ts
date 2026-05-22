@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ collectionId: string }> }
 ) {
   try {
-    await requireAuth();
+    // await requireAuth();
     const { collectionId } = await params;
 
     // 1. Resolve the collection name

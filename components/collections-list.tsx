@@ -94,7 +94,10 @@ export function CollectionsList({ collections: initialCollections = [], isLoadin
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="text-sm text-primary/70 font-medium">Loading collections…</span>
+        </div>
       </div>
     );
   }
@@ -114,8 +117,8 @@ export function CollectionsList({ collections: initialCollections = [], isLoadin
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {collections.map((collection) => (
-        <Card key={collection.id} className="flex flex-col hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-3">
+        <Card key={collection.id} className="flex flex-col shadow-sm border-border/60 bg-card hover:shadow-md transition-all">
+          <CardHeader className="pb-3 border-b border-border/30 bg-muted/10">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -161,8 +164,9 @@ export function CollectionsList({ collections: initialCollections = [], isLoadin
               </Button>
             </Link>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              className="hover:bg-primary/10 hover:text-primary"
               onClick={() => {
                 setEditingCollection(collection);
                 setEditDialogOpen(true);
@@ -174,11 +178,16 @@ export function CollectionsList({ collections: initialCollections = [], isLoadin
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
+                  className="hover:bg-destructive/10 hover:text-destructive"
                   disabled={deletingId === collection.id}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deletingId === collection.id ? (
+                    <span className="w-4 h-4 rounded-full border-2 border-destructive/30 border-t-destructive animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
