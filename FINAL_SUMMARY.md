@@ -54,7 +54,7 @@ Everything explained, with examples!
 ```
 ✅ QUICK_REFERENCE.md - Start here!
 ✅ SCHEMA_SETUP_PRODUCT_CATEGORIES.md - Step-by-step setup
-✅ MONGOOSE_TO_CMS_MIGRATION.md - Why this is better
+✅ MONGOOSE_TO_jayshree_blogs_MIGRATION.md - Why this is better
 ✅ ECOMMERCE_USAGE_GUIDE.md - Real-world e-commerce example
 ✅ PRODUCT_CATEGORIES_INDEX.md - Complete index
 ✅ RELATIONSHIP_SCHEMAS_GUIDE.md - Deep technical
@@ -122,7 +122,7 @@ const ProductcategorySchema = new mongoose.Schema({
 });
 ```
 
-### Your New CMS Schema:
+### Your New jayshree_blogs Schema:
 ```javascript
 // ✅ Better:
 // Same collection for all levels
@@ -148,7 +148,7 @@ const ProductcategorySchema = new mongoose.Schema({
 
 ## 📊 Comparison: Old vs New
 
-| Feature | Your Mongoose | Your New CMS |
+| Feature | Your Mongoose | Your New jayshree_blogs |
 |---------|---|---|
 | **Max Levels** | 3 (fixed) | ∞ (unlimited) |
 | **Field Duplication** | Yes | No |
@@ -169,7 +169,7 @@ const ProductcategorySchema = new mongoose.Schema({
 
 ### For Complete Understanding:
 1. Read: [PRODUCT_CATEGORIES_INDEX.md](PRODUCT_CATEGORIES_INDEX.md)
-2. Read: [MONGOOSE_TO_CMS_MIGRATION.md](MONGOOSE_TO_CMS_MIGRATION.md)
+2. Read: [MONGOOSE_TO_jayshree_blogs_MIGRATION.md](MONGOOSE_TO_jayshree_blogs_MIGRATION.md)
 3. Read: [ECOMMERCE_USAGE_GUIDE.md](ECOMMERCE_USAGE_GUIDE.md)
 
 ### For Frontend Development:
@@ -284,10 +284,10 @@ Beyond what you asked for, you also got:
 → Read: [ECOMMERCE_USAGE_GUIDE.md](ECOMMERCE_USAGE_GUIDE.md)
 
 ### If you want to migrate from Mongoose:
-→ Read: [MONGOOSE_TO_CMS_MIGRATION.md](MONGOOSE_TO_CMS_MIGRATION.md)
+→ Read: [MONGOOSE_TO_jayshree_blogs_MIGRATION.md](MONGOOSE_TO_jayshree_blogs_MIGRATION.md)
 
 ### If you want all details:
-→ All files are in: `d:\Master_Backend\CMS_BAAS\`
+→ All files are in: `d:\Master_Backend\jayshree_blogs_BAAS\`
 
 ---
 

@@ -18,8 +18,8 @@ All documentation and code files for implementing the product categories schema.
 - Sample data creation
 - Expected API responses
 
-### 3. **[MONGOOSE_TO_CMS_MIGRATION.md](MONGOOSE_TO_CMS_MIGRATION.md)**
-- Why CMS approach is better than your original Mongoose schema
+### 3. **[MONGOOSE_TO_jayshree_blogs_MIGRATION.md](MONGOOSE_TO_jayshree_blogs_MIGRATION.md)**
+- Why jayshree_blogs approach is better than your original Mongoose schema
 - Direct comparison table
 - Data structure differences
 - Query examples (old vs new)
@@ -184,12 +184,12 @@ Get breadcrumb:       /api/breadcrumbs/COLLECTION_ID/RECORD_ID
 ## 📊 Files Structure in Your Project
 
 ```
-d:\Master_Backend\CMS_BAAS\
+d:\Master_Backend\jayshree_blogs_BAAS\
 
 📚 Documentation:
 ├── QUICK_REFERENCE.md (START HERE!)
 ├── SCHEMA_SETUP_PRODUCT_CATEGORIES.md
-├── MONGOOSE_TO_CMS_MIGRATION.md
+├── MONGOOSE_TO_jayshree_blogs_MIGRATION.md
 ├── ECOMMERCE_USAGE_GUIDE.md
 ├── RELATIONSHIP_SCHEMAS_GUIDE.md
 ├── RELATIONSHIP_PATTERNS.md
@@ -235,7 +235,7 @@ d:\Master_Backend\CMS_BAAS\
 
 ## ✅ Why This Approach (vs Your Original Mongoose Schema)
 
-| Feature | Your Old Schema | New CMS Approach |
+| Feature | Your Old Schema | New jayshree_blogs Approach |
 |---------|---|---|
 | **Nesting Limit** | Fixed at 3 levels | Unlimited |
 | **Data Duplication** | Yes (15 fields × 3 levels) | No (1 field definition) |
@@ -264,7 +264,7 @@ Read in order:
 ### For DevOps/Database
 Read in order:
 1. RELATIONSHIP_PATTERNS.md
-2. MONGOOSE_TO_CMS_MIGRATION.md
+2. MONGOOSE_TO_jayshree_blogs_MIGRATION.md
 3. Set up MongoDB indexes
 
 ### For Product Managers
@@ -379,7 +379,7 @@ All original relationship documentation still available:
 ## Version Info
 
 - **Created**: May 14, 2026
-- **CMS Version**: Next.js 16 + React 19
+- **jayshree_blogs Version**: Next.js 16 + React 19
 - **Database**: MongoDB
 - **Schema**: Product Categories with parent_id hierarchy
 

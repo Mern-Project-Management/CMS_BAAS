@@ -448,4 +448,4 @@ curl http://localhost:3000/api/hierarchies/$COLLECTION_ID \
 
 **Bookmark this page!** 📌
 
-All files in: `d:\Master_Backend\CMS_BAAS\`
+All files in: `d:\Master_Backend\jayshree_blogs_BAAS\`

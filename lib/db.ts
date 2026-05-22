@@ -3,7 +3,7 @@ import { mongoClientPromise } from '@/lib/mongodb';
 import type { Collection, CollectionWithFields, Field, User, UserRole } from '@/lib/types';
 import crypto from 'crypto';
 
-const dbName = process.env.MONGODB_DB || 'CMS';
+const dbName = process.env.MONGODB_DB || 'jayshree_blogs';
 
 function nowIso() {
   return new Date().toISOString();

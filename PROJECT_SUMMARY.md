@@ -182,8 +182,8 @@ npm run dev
 
 ### 3. Environment Variables
 ```env
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/CMS?retryWrites=true&w=majority
-MONGODB_DB=CMS
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/jayshree_blogs?retryWrites=true&w=majority
+MONGODB_DB=jayshree_blogs
 ```
 
 ## Usage Guide

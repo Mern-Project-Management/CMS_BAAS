@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'CMS BAAS',
+  title: 'jayshree_blogs BAAS',
   description: 'Dynamic Schema Builder and Content Management System',
   icons: {
     icon: '/favicon.svg',

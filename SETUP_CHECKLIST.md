@@ -23,7 +23,7 @@ Follow this checklist to get your Dynamic Schema Builder running in minutes.
 - [ ] Paste these lines:
 ```env
 MONGODB_URI=paste_your_mongodb_connection_string_here
-MONGODB_DB=CMS
+MONGODB_DB=jayshree_blogs
 ```
 - [ ] Replace values with your actual MongoDB connection string
 - [ ] Save the file

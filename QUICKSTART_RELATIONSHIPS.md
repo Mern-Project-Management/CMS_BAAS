@@ -1,6 +1,6 @@
 # 🚀 Quick Start: Implementing Relationships
 
-This is a step-by-step guide to get relationships working in your CMS within 30 minutes.
+This is a step-by-step guide to get relationships working in your jayshree_blogs within 30 minutes.
 
 ## What You'll Build
 
@@ -16,7 +16,7 @@ Make sure MongoDB is running and connected. Your project already supports this.
 ## Step 2: Create the Categories Collection (3 minutes)
 
 ### Using the UI:
-1. Open your CMS dashboard
+1. Open your jayshree_blogs dashboard
 2. Click "New Collection"
 3. Fill in:
    - **Name**: `categories`

@@ -1,4 +1,4 @@
-# 🔄 Your Mongoose Schema → CMS Schema Conversion
+# 🔄 Your Mongoose Schema → jayshree_blogs Schema Conversion
 
 ## Comparison: What You Had vs What You Get
 
@@ -29,7 +29,7 @@ ProductCategory {
 
 ---
 
-### ✅ Your CMS Schema Structure (Better Approach):
+### ✅ Your jayshree_blogs Schema Structure (Better Approach):
 ```javascript
 // Same collection for all levels
 ProductCategory {
@@ -54,7 +54,7 @@ ProductCategory {
 
 ## Field-by-Field Mapping
 
-| Mongoose Field | CMS Field Type | Notes |
+| Mongoose Field | jayshree_blogs Field Type | Notes |
 |---|---|---|
 | `category` | Text (required, unique) | Main category name |
 | `photo` | Image | URL to image |
@@ -112,7 +112,7 @@ ProductCategory {
 
 ---
 
-### Your CMS (Flat with parent_id - Better Way):
+### Your jayshree_blogs (Flat with parent_id - Better Way):
 ```javascript
 // Document 1
 {
@@ -152,7 +152,7 @@ ProductCategory {
 
 ---
 
-## How to Create This in Your CMS
+## How to Create This in Your jayshree_blogs
 
 ### Quick Start (2 options):
 
@@ -189,7 +189,7 @@ db.productcategories.find({ subCategories: { $exists: true } })
 // ❌ Doesn't work! Need custom logic
 ```
 
-**CMS (New):**
+**jayshree_blogs (New):**
 ```javascript
 // GET /api/data/product_categories?parent_id=null
 // Returns all categories where parent_id is null
@@ -209,7 +209,7 @@ db.productcategories.aggregate([
 // Complex! Nested array required
 ```
 
-**CMS (New):**
+**jayshree_blogs (New):**
 ```javascript
 // GET /api/data/product_categories?parent_id=ELECTRONICS_ID
 // Simple! Just filter by parent_id
@@ -226,7 +226,7 @@ db.productcategories.findOne({ category: "Electronics" })
 // Limited to what's in the document
 ```
 
-**CMS (New):**
+**jayshree_blogs (New):**
 ```javascript
 // GET /api/hierarchies/COLLECTION_ID
 {
@@ -264,7 +264,7 @@ db.productcategories.findOne({ category: "Electronics" })
 // Would need custom recursive logic
 ```
 
-**CMS (New):**
+**jayshree_blogs (New):**
 ```javascript
 // GET /api/breadcrumbs/COLLECTION_ID/ANDROID_PHONES_ID
 [
@@ -288,7 +288,7 @@ db.productcategories.updateOne(
 )
 ```
 
-### CMS (New):
+### jayshree_blogs (New):
 ```javascript
 // ✅ Simple! Just update parent_id
 PUT /api/data/product_categories/SMARTPHONES_ID
@@ -350,7 +350,7 @@ async function migrateData() {
     }
   }
 
-  // Import to CMS via API
+  // Import to jayshree_blogs via API
   for (const cat of flattened) {
     await axios.post('http://localhost:3000/api/data/product_categories', cat, {
       headers: {
@@ -369,9 +369,9 @@ migrateData();
 
 ## Advantages Summary
 
-### Your CMS Approach Provides:
+### Your jayshree_blogs Approach Provides:
 
-| Feature | Mongoose Nested | CMS Flat |
+| Feature | Mongoose Nested | jayshree_blogs Flat |
 |---------|---|---|
 | **Nesting Depth** | Limited to structure | Unlimited |
 | **Query Speed** | 🔴 Slow (nested array) | ✅ Fast (indexed) |
@@ -429,6 +429,6 @@ curl http://localhost:3000/api/breadcrumbs/COLLECTION_ID/RECORD_ID \
 
 Your old Mongoose schema was **document-oriented** (one big nested document).
 
-Your new CMS approach is **relation-oriented** (flat records with foreign keys).
+Your new jayshree_blogs approach is **relation-oriented** (flat records with foreign keys).
 
 **This is more scalable, flexible, and follows database best practices!** ✅
