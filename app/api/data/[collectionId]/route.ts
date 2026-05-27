@@ -10,23 +10,31 @@ import {
   oid
 } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import type { ApiResponse } from '@/lib/types';
+import type { ApiResponse, CollectionWithFields } from '@/lib/types';
+
+const slugify = (text: string) => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/[\s_-]+/g, '-')  // Replace spaces/underscores with dashes
+    .replace(/^-+|-+$/g, '');   // Trim leading/trailing dashes
+};
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ collectionId: string }> }
 ) {
   try {
-    // await requireAuth();
     const { collectionId } = await params;
 
     // 1. Resolve the collection name
-    let { data: collection } = await getCollection(collectionId);
+    let collection: CollectionWithFields | null = (await getCollection(collectionId)).data;
     
     // If not found by ID, try finding by name (slug)
     if (!collection) {
       const { data: byName } = await getCollectionByName(collectionId);
-      collection = byName;
+      collection = byName ? { ...byName, fields: byName.fields || [] } : null;
     }
 
     if (!collection) {
@@ -106,11 +114,11 @@ export async function POST(
     const { collectionId } = await params;
 
     // 1. Resolve the collection name
-    let { data: collection } = await getCollection(collectionId);
+    let collection: CollectionWithFields | null = (await getCollection(collectionId)).data;
     
     if (!collection) {
       const { data: byName } = await getCollectionByName(collectionId);
-      collection = byName;
+      collection = byName ? { ...byName, fields: byName.fields || [] } : null;
     }
 
     if (!collection) {
@@ -120,7 +128,26 @@ export async function POST(
     // 2. Parse request body
     const body = await request.json();
     const db = await getDb();
-    
+
+    // Sanitize the slug provided by the frontend
+    // This ensures that even if the user manually typed " My Page ", it's saved as "my-page"
+    if (body.slug && typeof body.slug === 'string') {
+      body.slug = slugify(body.slug);
+    }
+
+    // Ensure slug uniqueness within the collection (Collision Avoidance)
+    if (body.slug && typeof body.slug === 'string') {
+      const baseSlug = body.slug;
+      let uniqueSlug = baseSlug;
+      let counter = 1;
+      
+      while (await db.collection(collection.name).findOne({ slug: uniqueSlug })) {
+        uniqueSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+      body.slug = uniqueSlug;
+    }
+
     // 3. Insert record with timestamps
     const now = new Date().toISOString();
     const doc = {

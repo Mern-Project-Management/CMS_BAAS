@@ -8,7 +8,6 @@ import {
   oid,
 } from '@/lib/db';
 
-import { requireAuth } from '@/lib/auth';
 import type { ApiResponse, CollectionWithFields, Field } from '@/lib/types';
 
 async function buildTree(
@@ -103,8 +102,6 @@ export async function GET(
   context: { params: Promise<{ collectionId: string }> }
 ) {
   try {
-    await requireAuth();
-
     const { collectionId } = await context.params;
 
     // Resolve collection metadata
@@ -156,16 +153,6 @@ export async function GET(
     );
   } catch (error: any) {
     console.error('Hierarchy API Error:', error);
-
-    if (error.message === 'Unauthorized') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-        },
-        { status: 401 }
-      );
-    }
 
     return NextResponse.json(
       {

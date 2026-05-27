@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FilePreview } from './file-preview';
 import { MultiImageUpload } from './multi-image-upload';
 import { FileUpload } from './file-upload';
+import { HierarchicalSelector } from './hierarchical-selector';
 import { TipTapEditor } from './tiptap-editor';
 import { Eye, Pencil, Trash2, Columns3, X, Save } from 'lucide-react';
 import type { Field } from '@/lib/types';
@@ -217,6 +218,26 @@ export function RecordsTable({
 
       case 'ImageArray':
         return <MultiImageUpload value={Array.isArray(value) ? value : []} onChange={setValue} />;
+
+      case 'Relation': {
+        if (!field.relation_to_collection) {
+          return (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+              Relation target collection is not configured for this field.
+            </div>
+          );
+        }
+        const isSelfRelation = field.relation_to_collection === collectionId;
+        return (
+          <HierarchicalSelector
+            collectionId={field.relation_to_collection}
+            parentFieldName={isSelfRelation ? field.name : "parent_id"}
+            value={value}
+            onSelect={(selectedId) => setValue(selectedId)}
+            placeholder={`Select ${field.display_name}...`}
+          />
+        );
+      }
 
       default:
         return (
@@ -524,7 +545,7 @@ function renderViewValue(record: RecordRow, field: Field) {
 // ── Table cell value renderer (compact) ──
 function resolvePopulatedLabel(obj: any): string {
   if (!obj || typeof obj !== 'object') return '';
-  const label = obj.category_name || obj.display_name || obj.name || obj.title || obj.label || obj.slug || obj.id;
+  const label = obj.category || obj.category_name || obj.display_name || obj.name || obj.title || obj.label || obj.slug || obj.id;
   const nestedKey = Object.keys(obj).find((k) => k.endsWith('_populated'));
   if (nestedKey && obj[nestedKey]) return `${resolvePopulatedLabel(obj[nestedKey])} › ${label}`;
   return label || 'Unnamed';

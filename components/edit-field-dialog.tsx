@@ -50,7 +50,7 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
   const { toast } = useToast();
 
   useEffect(() => {
-    if (field) {
+    if (open && field) {
       setFormData({
         name: field.name,
         display_name: field.display_name,
@@ -64,7 +64,7 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
       });
       fetchCollections();
     }
-  }, [field]);
+  }, [open, field]);
 
   async function fetchCollections() {
     try {
@@ -74,6 +74,11 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
         setCollections(result.data || []);
       }
     } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch collections for relation field',
+        variant: 'destructive',
+      });
       console.error('Failed to fetch collections', error);
     }
   }
