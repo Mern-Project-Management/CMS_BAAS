@@ -19,14 +19,16 @@ interface FieldTypeSelectorProps {
   onChange: (type: FieldType) => void;
 }
 
-const FIELD_GROUPS = {
-  'Basic': ['Text', 'Number', 'Boolean'],
+const FIELD_GROUPS: Record<string, FieldType[]> = {
+  'Basic': ['Text', 'Textarea', 'Number', 'Boolean', 'Color'],
   'Date & Time': ['Date', 'DateTime'],
   'Media': ['File', 'Image', 'ImageArray'],
   'Advanced': ['JSON', 'Relation', 'Array', 'Editor'],
-} as const;
+};
 
 export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
+  const currentTypeInfo = FIELD_TYPES[value];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -36,7 +38,7 @@ export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
         >
           <span className="flex items-center gap-2">
             {getFieldTypeIcon(value)}
-            {FIELD_TYPES[value].label}
+            {currentTypeInfo?.label ?? value}
           </span>
           <ChevronDown className="w-4 h-4 opacity-50" />
         </Button>
@@ -48,9 +50,14 @@ export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
               {group}
             </DropdownMenuLabel>
             <DropdownMenuGroup>
-              {types.map((type) => {
-                const fieldType = type as FieldType;
+              {types.map((fieldType) => {
                 const typeInfo = FIELD_TYPES[fieldType];
+
+                if (!typeInfo) {
+                  console.warn(`FieldTypeSelector: no entry in FIELD_TYPES for "${fieldType}"`);
+                  return null;
+                }
+
                 return (
                   <DropdownMenuItem
                     key={fieldType}

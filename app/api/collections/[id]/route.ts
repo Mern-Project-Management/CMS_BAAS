@@ -1,120 +1,139 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  getCollection,
-  getCollectionByName,
-  updateCollection,
-  deleteCollection,
-} from '@/lib/db';
 import { requireRole } from '@/lib/auth';
+import { MongoClient, ObjectId } from 'mongodb';
 import type { ApiResponse } from '@/lib/types';
-import { ObjectId } from 'mongodb';
+import { deleteCollection } from '@/lib/db';
 
+// DB Configuration from environment variables
+const uri = process.env.MONGODB_URI!;
+const dbName = process.env.MONGODB_DB!;
+
+let client: MongoClient | null = null;
+
+async function getDb() {
+  if (!client) {
+    client = await MongoClient.connect(uri);
+  }
+  return client.db(dbName);
+}
+
+// GET method to fetch a single collection's metadata by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    let data, error;
+    const db = await getDb();
 
-    // Try to get by ID first if it's a valid ObjectId
-    if (ObjectId.isValid(id)) {
-      const result = await getCollection(id);
-      data = result.data;
-      error = result.error;
+    // Search by ID if it's a valid ObjectId, otherwise fallback to searching by collection name
+    const query = ObjectId.isValid(id) 
+      ? { _id: new ObjectId(id) } 
+      : { name: id };
+
+    const collection = await db.collection('collections').findOne(query);
+
+    if (!collection) {
+      return NextResponse.json({ success: false, error: 'Collection not found' } as ApiResponse<null>, { status: 404 });
     }
 
-    // If not found by ID or invalid ObjectId, try by name
-    if (!data && !error) {
-      const result = await getCollectionByName(id);
-      data = result.data;
-      error = result.error;
-    }
-
-    if (error || !data) {
-      return NextResponse.json(
-        { success: false, error: 'Collection not found' } as ApiResponse<null>,
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: true, data } as ApiResponse<typeof data>,
-      { status: 200 }
-    );
+    // Map _id to id and ensure folder_id is a string for frontend consistency
+    const data = {
+      ...collection,
+      id: collection._id.toString(),
+      _id: undefined,
+      folder_id: collection.folder_id ? collection.folder_id.toString() : null,
+    };
+    return NextResponse.json({ success: true, data } as ApiResponse<typeof data>);
   } catch (error) {
-    console.error('Collection GET error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' } as ApiResponse<null>,
-      { status: 500 }
-    );
+    console.error('GET collection by ID error:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' } as ApiResponse<null>, { status: 500 });
   }
 }
 
+// PATCH method to update a collection's metadata (e.g., folder_id)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireRole(['superadmin']);
+    await requireRole(['superadmin']); // Only superadmins can reorder collections
     const { id } = await params;
+
+    const query = ObjectId.isValid(id) 
+      ? { _id: new ObjectId(id) } 
+      : { name: id };
+
     const body = await request.json();
+    const { folder_id, name, display_name, description, icon, color } = body;
 
-    // Only pass allowed fields so we don't send undefined or extra props
-    const updates: Record<string, string> = {};
-    if (body.name != null && String(body.name).trim() !== '') updates.name = String(body.name).trim().toLowerCase().replace(/\s+/g, '_');
-    if (body.display_name != null && String(body.display_name).trim() !== '') updates.display_name = String(body.display_name).trim();
-    if (body.description != null) updates.description = String(body.description);
-    if (body.icon != null) updates.icon = String(body.icon);
-    if (body.color != null) updates.color = String(body.color);
+    const updateDoc: any = {};
 
-    const { data, error } = await updateCollection(id, updates);
+    if (name !== undefined) updateDoc.name = name;
+    if (display_name !== undefined) updateDoc.display_name = display_name;
+    if (description !== undefined) updateDoc.description = description;
+    if (icon !== undefined) updateDoc.icon = icon;
+    if (color !== undefined) updateDoc.color = color;
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to update collection' } as ApiResponse<null>,
-        { status: 500 }
-      );
+    if (folder_id !== undefined) {
+      if (folder_id === null) {
+        updateDoc.folder_id = null; // Set to null for uncategorized
+      } else if (typeof folder_id === 'string') {
+        if (folder_id === '') {
+          updateDoc.folder_id = null; // Also treat empty string as uncategorized
+        } else {
+          try {
+            updateDoc.folder_id = new ObjectId(folder_id); // Convert to ObjectId
+          } catch (e) {
+            return NextResponse.json({ success: false, error: 'Invalid folder_id format' } as ApiResponse<null>, { status: 400 });
+          }
+        }
+      } else {
+        return NextResponse.json({ success: false, error: 'Invalid folder_id format' } as ApiResponse<null>, { status: 400 });
+      }
     }
 
-    return NextResponse.json(
-      { success: true, data, message: 'Collection updated successfully' } as ApiResponse<typeof data>,
-      { status: 200 }
+    if (Object.keys(updateDoc).length === 0) {
+      return NextResponse.json({ success: false, error: 'No fields to update' } as ApiResponse<null>, { status: 400 });
+    }
+
+    const db = await getDb();
+    const result = await db.collection('collections').updateOne(
+      query,
+      { $set: updateDoc }
     );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ success: false, error: 'Collection not found' } as ApiResponse<null>, { status: 404 });
+    }
+
+    const updatedCollection = await db.collection('collections').findOne(query);
+    const data = updatedCollection ? { ...updatedCollection, id: updatedCollection._id.toString(), _id: undefined, folder_id: updatedCollection.folder_id ? updatedCollection.folder_id.toString() : null } : null;
+
+    return NextResponse.json({ success: true, data } as ApiResponse<typeof data>);
   } catch (error) {
-    console.error('Collection PATCH error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' } as ApiResponse<null>,
-      { status: 500 }
-    );
+    console.error('PATCH collection by ID error:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' } as ApiResponse<null>, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireRole(['superadmin']);
     const { id } = await params;
-    const { error } = await deleteCollection(id);
+    
+    // Call the database utility you already have in lib/db.ts
+    const result = await deleteCollection(id);
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to delete collection' } as ApiResponse<null>,
-        { status: 500 }
-      );
+    if (result.error) {
+      return NextResponse.json({ success: false, error: result.error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { success: true, message: 'Collection deleted successfully' } as ApiResponse<null>,
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Collection DELETE error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' } as ApiResponse<null>,
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, message: 'Collection deleted' }, { status: 200 });
+  } catch (err) {
+    console.error('Delete collection error:', err);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

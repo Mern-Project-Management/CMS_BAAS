@@ -5,11 +5,12 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
 
 import {
-  Bold, Italic, Underline as UnderlineIcon, Strikethrough,
+  Bold, Italic, Underline as UnderlineIcon, Strikethrough, ImagePlus,
   List, ListOrdered, Quote, Code, Minus,
   Link as LinkIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Undo, Redo, Pilcrow,
@@ -23,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 interface TipTapEditorProps {
   content: string;
@@ -50,6 +51,7 @@ export function TipTapEditor({
   editable = true,
   minHeight = '220px',
 }: TipTapEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -90,6 +92,25 @@ export function TipTapEditor({
           rel: 'noopener noreferrer',
         },
       }),
+      Image.extend({
+        draggable: true,
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            width: {
+              default: '50%',
+              renderHTML: attributes => ({
+                style: `width: ${attributes.width}; height: auto;`,
+              }),
+            },
+          };
+        },
+      }).configure({
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'rounded-lg border border-border shadow-sm max-w-full my-2 inline-block mx-1 align-middle cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-primary/50 transition-all',
+        },
+      }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({
         placeholder,
@@ -113,6 +134,8 @@ export function TipTapEditor({
           '[&_p]:leading-7 [&_p]:my-2',
           '[&_a]:text-primary [&_a]:underline',
           '[&_hr]:border-border',
+          // Helper to make horizontal dragging easier to see
+          '[&_img.ProseMirror-selectednode]:ring-2 [&_img.ProseMirror-selectednode]:ring-primary',
         ].join(' '),
       },
     },
@@ -142,6 +165,26 @@ export function TipTapEditor({
       editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     }
   }, [editor]);
+
+const addImage = useCallback(() => {
+  fileInputRef.current?.click();
+}, []);
+
+const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!editor) return;
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const base64 = reader.result as string;
+    editor.chain().focus().setImage({ src: base64 }).run();
+  };
+  reader.readAsDataURL(file);
+
+  // Reset so the same file can be picked again
+  e.target.value = '';
+}, [editor]);
 
   if (!editor) {
     return (
@@ -278,6 +321,27 @@ export function TipTapEditor({
             <LinkIcon className="w-3.5 h-3.5" />
           </TB>
 
+          {/* ── Image ── */}
+          <TB onClick={addImage} title="Insert image">
+            <ImagePlus className="w-3.5 h-3.5" />
+          </TB>
+
+          {/* ── Image Resizing ── */}
+          {editor.isActive('image') && (
+            <>
+              <Separator orientation="vertical" className="h-5 mx-1" />
+              <TB onClick={() => editor.chain().focus().updateAttributes('image', { width: '25%' }).run()} title="Small (25%)">
+                <span className="text-[10px] font-bold">25%</span>
+              </TB>
+              <TB onClick={() => editor.chain().focus().updateAttributes('image', { width: '50%' }).run()} title="Medium (50%)">
+                <span className="text-[10px] font-bold">50%</span>
+              </TB>
+              <TB onClick={() => editor.chain().focus().updateAttributes('image', { width: '100%' }).run()} title="Full (100%)">
+                <span className="text-[10px] font-bold">100%</span>
+              </TB>
+            </>
+          )}
+
           <Separator orientation="vertical" className="h-5 mx-1" />
 
           {/* ── Alignment ── */}
@@ -310,6 +374,14 @@ export function TipTapEditor({
       <div style={{ minHeight }}>
         <EditorContent editor={editor} />
       </div>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleImageUpload}
+      />
 
       {/* ── Status bar ── */}
       {editable && (

@@ -13,14 +13,19 @@ CREATE TABLE IF NOT EXISTS collections (
 -- Field types enum
 CREATE TYPE field_type AS ENUM (
   'Text',
+  'Textarea',
   'Number',
   'Boolean',
   'Date',
   'DateTime',
   'File',
   'Image',
+  'ImageArray',
   'JSON',
-  'Relation'
+  'Relation',
+  'Array',
+  'Editor',
+  'Color'
 );
 
 -- Field rules enum

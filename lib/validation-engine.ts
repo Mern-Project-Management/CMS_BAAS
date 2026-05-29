@@ -39,7 +39,18 @@ export function validateFieldValue(
   switch (field.field_type) {
     case 'Email':
     case 'Text':
+    case 'Color':
       validateText(value, field, errors);
+      if (field.field_type === 'Color' && value && typeof value === 'string') {
+        const hex = value.trim();
+        if (!/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex)) {
+          errors.push({
+            field: field.name,
+            message: `${field.display_name} must be a valid hex color (e.g. #1e8a8a)`,
+            type: 'pattern',
+          });
+        }
+      }
       break;
     case 'Number':
       validateNumber(value, field, errors);

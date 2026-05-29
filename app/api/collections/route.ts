@@ -5,6 +5,7 @@ import {
 } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 import type { ApiResponse, CreateCollectionRequest } from '@/lib/types';
+import { ObjectId } from 'mongodb';
 
 export async function GET() {
   try {
@@ -33,12 +34,20 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await requireRole(['superadmin']);
-    const body: CreateCollectionRequest = await request.json();
+    const body: CreateCollectionRequest & { folder_id?: string } = await request.json();
 
     // Validate required fields
     if (!body.name || !body.display_name) {
       return NextResponse.json(
         { success: false, error: 'Name and display_name are required' } as ApiResponse<null>,
+        { status: 400 }
+      );
+    }
+
+    // Validate folder_id if provided to ensure it is a valid ObjectId
+    if (body.folder_id && !ObjectId.isValid(body.folder_id)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid folder_id format' } as ApiResponse<null>,
         { status: 400 }
       );
     }
@@ -49,7 +58,7 @@ export async function POST(request: NextRequest) {
       description: body.description,
       icon: body.icon,
       color: body.color,
-    });
+    } as any);
 
     if (error) {
       console.error('Create collection error:', error);

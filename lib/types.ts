@@ -1,5 +1,5 @@
 // Field Types
-export type FieldType = 'Text' | 'Number' | 'Boolean' | 'Date' | 'DateTime' | 'File' | 'Image' | 'ImageArray' | 'JSON' | 'Relation' | 'Array' | 'Editor';
+export type FieldType = 'Text' | 'Textarea' | 'Number' | 'Boolean' | 'Date' | 'DateTime' | 'File' | 'Image' | 'ImageArray' | 'JSON' | 'Relation' | 'Array' | 'Editor' | 'Color';
 
 // Field Rules
 export type FieldRule = 'Required' | 'Unique' | 'Encrypted' | 'Validation';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { verifyUser } from '@/lib/db';
-import { setSession } from '@/lib/auth';
 import type { ApiResponse } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
@@ -16,14 +16,23 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: user, error } = await verifyUser(username, password);
+
     if (error || !user) {
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials' } as ApiResponse<null>,
+        { success: false, error: error instanceof Error ? error.message : 'Invalid credentials' } as ApiResponse<null>,
         { status: 401 }
       );
     }
 
-    await setSession(user.id);
+    // Set session cookie
+    const cookieStore = await cookies();
+    cookieStore.set('auth_session', user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
 
     return NextResponse.json(
       {
@@ -35,13 +44,13 @@ export async function POST(request: NextRequest) {
           role: user.role,
         },
         message: 'Login successful',
-      } as ApiResponse<typeof user>,
+      } as ApiResponse<any>,
       { status: 200 }
     );
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (error: any) {
+    console.error('Login API Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' } as ApiResponse<null>,
+      { success: false, error: error.message } as ApiResponse<null>,
       { status: 500 }
     );
   }

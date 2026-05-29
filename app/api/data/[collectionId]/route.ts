@@ -98,6 +98,18 @@ export async function GET(
     } as ApiResponse<any>, { status: 200 });
 
   } catch (error: any) {
+    console.error('Data GET Error:', error);
+
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized',
+        },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json({
       success: false,
       error: error.message || 'Internal server error',
@@ -194,6 +206,18 @@ export async function POST(
     } as ApiResponse<any>, { status: 201 });
 
   } catch (error: any) {
+    console.error('Data POST Error:', error);
+
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized',
+        },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json({
       success: false,
       error: error.message || 'Internal server error',

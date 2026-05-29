@@ -8,10 +8,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FileUpload } from '@/components/file-upload';
 import { MultiImageUpload } from '@/components/multi-image-upload';
 import { TipTapEditor } from '@/components/tiptap-editor';
+import { ColorField } from '@/components/color-field';
 import { useToast } from '@/hooks/use-toast';
 import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Field } from '@/lib/types';
+
+const slugify = (str: string) =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 type Props = {
   collectionId: string;
@@ -26,7 +35,15 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
   const [formKey, setFormKey] = useState(0);
 
   function updateField(name: string, value: any) {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      
+      // Auto-generate slug if it exists in fields and source is a "name" field
+      if (['name', 'title', 'display_name', 'category'].includes(name) && fields.some(f => f.name === 'slug')) {
+        next['slug'] = slugify(String(value));
+      }
+      return next;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -136,6 +153,13 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
             </label>
           </div>
         );
+      case 'Color':
+        return (
+          <ColorField
+            value={typeof value === 'string' ? value : ''}
+            onChange={(hex) => updateField(field.name, hex)}
+          />
+        );
       case 'Number':
         return (
           <Input
@@ -171,6 +195,15 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
             onChange={(e) => updateField(field.name, e.target.value)}
             required={field.is_required}
             placeholder="JSON string"
+          />
+        );
+      case 'Textarea':
+        return (
+          <Textarea
+            value={value}
+            onChange={(e) => updateField(field.name, e.target.value)}
+            required={field.is_required}
+            placeholder={field.display_name}
           />
         );
       case 'File':
@@ -251,7 +284,7 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
       {fields.map((field) => (
         <div 
           key={field.id} 
-          className={`space-y-2 ${['Editor', 'JSON', 'Textarea', 'File', 'Image', 'ImageArray', 'Array'].includes(field.field_type) ? 'md:col-span-2' : ''}`}
+          className={`space-y-2 ${['Editor', 'JSON', 'Textarea', 'File', 'Image', 'ImageArray', 'Array'].includes(field.field_type as string) ? 'md:col-span-2' : ''}`}
         >
           {field.field_type !== 'Boolean' && (
             <label className="text-sm font-medium">

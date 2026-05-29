@@ -11,10 +11,13 @@ import {
   ToggleLeft as Toggle2,
   Type,
   PenTool,
+  Palette,
+  AlignLeft,
 } from 'lucide-react';
 
 export const FIELD_TYPES: Record<FieldType, { label: string; description: string }> = {
   Text: { label: 'Text', description: 'Single or multi-line text' },
+  Textarea: { label: 'Textarea', description: 'Multi-line text area' },
   Number: { label: 'Number', description: 'Integer or decimal numbers' },
   Boolean: { label: 'Boolean', description: 'True or false value' },
   Date: { label: 'Date', description: 'Date without time' },
@@ -26,6 +29,7 @@ export const FIELD_TYPES: Record<FieldType, { label: string; description: string
   Relation: { label: 'Relation', description: 'Link to another collection' },
   Array: { label: 'Array', description: 'Multiple values (list of text items)' },
   Editor: { label: 'Editor', description: 'Rich text editor with formatting' },
+  Color: { label: 'Color', description: 'Hex color picker for backgrounds and text' },
 };
 
 export function getFieldTypeIcon(type: FieldType) {
@@ -55,6 +59,10 @@ export function getFieldTypeIcon(type: FieldType) {
       return <List {...iconProps} />;
     case 'Editor':
       return <PenTool {...iconProps} />;
+    case 'Color':
+      return <Palette {...iconProps} />;
+      case 'Textarea':
+  return <AlignLeft {...iconProps} />;
     default:
       return <Type {...iconProps} />;
   }

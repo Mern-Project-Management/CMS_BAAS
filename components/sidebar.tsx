@@ -1,41 +1,155 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Loader2, Plus, Database, ChevronRight } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Loader2, Plus, Database, ChevronRight, ChevronDown, FileText, Folder, FolderPlus, MoreVertical, Trash2, Palette, Layout, MapPin, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-client';
 import { useSidebar } from '@/components/context/sidebar-context';
 import type { Collection } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+interface SidebarFolder {
+  id: string;
+  name: string;
+  icon?: string;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [folders, setFolders] = useState<SidebarFolder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [draggedCollectionId, setDraggedCollectionId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  
+  // State for creating a new folder
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  
   const { isSuperadmin } = useAuth();
   const { isOpen, toggle } = useSidebar();
+  const { toast } = useToast();
 
   useEffect(() => {
-    (async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/collections');
-        const json = await res.json();
-        if (json.success) {
-          setCollections(json.data || []);
+        const [colJson, folderJson] = await Promise.all([
+          fetch('/api/collections')
+            .then(res => res.ok ? res.json() : { success: false })
+            .catch(() => ({ success: false })),
+          fetch('/api/sidebar-folders')
+            .then(res => res.ok ? res.json() : { success: false })
+            .catch(() => ({ success: false }))
+        ]);
+
+        if (colJson?.success) setCollections(colJson.data || []);
+        if (folderJson.success) {
+          setFolders(folderJson.data || []);
+        } else {
+          // Fallback/Mock for testing if API doesn't exist yet
+          // setFolders([{ id: '1', name: 'About Us' }, { id: '2', name: 'Home Components' }]);
         }
       } catch (err) {
         console.error('Sidebar fetch collections error', err);
       } finally {
         setLoading(false);
       }
-    })();
+    };
+    fetchData();
   }, []);
 
-  if (pathname.startsWith('/login')) {
-    return null;
-  }
+  const toggleExpand = (id: string) => {
+    setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try {
+      const res = await fetch('/api/sidebar-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName }),
+      });
+
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      
+      const json = await res.json();
+      if (json.success) {
+        setFolders(prev => [...prev, json.data]);
+        setNewFolderName('');
+        setIsFolderDialogOpen(false);
+        toast({ title: "Folder created" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Could not create folder", variant: "destructive" });
+    }
+  };
+
+  const handleMoveCollection = async (collectionId: string, folderId: string | null) => {
+    if (collectionId === folderId) return;
+
+    try {
+      const res = await fetch(`/api/collections/${collectionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder_id: folderId }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setCollections(prev => prev.map(c => c.id === collectionId ? { ...c, folder_id: folderId } : c));
+        toast({ title: 'Organized', description: 'Collection moved.' });
+      } else {
+        throw new Error(json.error || 'Failed to move collection');
+      }
+    } catch (err) {
+      toast({ title: 'Error', description: 'Could not move collection', variant: 'destructive' });
+    } finally {
+      setDraggedCollectionId(null);
+      setDropTargetId(null);
+    }
+  };
+
+  if (pathname.startsWith('/login')) return null;
+
+  // Helper to render a collection item
+  const renderCollectionItem = (c: Collection) => {
+    const isActive = pathname === `/collections/${c.id}`;
+    return (
+      <div 
+        key={c.id}
+        draggable
+        onDragStart={() => setDraggedCollectionId(c.id)}
+        className="group relative"
+      >
+        <Link
+          href={`/collections/${c.id}?collectionName=${c.name}`}
+          className={cn(
+            'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+            isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+          )}
+        >
+          {c.icon || <FileText className="w-4 h-4 opacity-60" />}
+          {isOpen && <span className="truncate text-sm">{c.display_name}</span>}
+        </Link>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -84,57 +198,153 @@ export function Sidebar() {
           </div>
         ) : (
           <nav className="space-y-1">
-            {collections.map((c) => {
-              const isActive = pathname === `/collections/${c.id}`;
+            {isOpen && (
+              <p className="px-3 text-[10px] font-bold text-muted-foreground uppercase mb-2 mt-1">
+                Website colors
+              </p>
+            )}
+            <Link
+              href="/site-theme"
+              className={cn(
+                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+                pathname === '/site-theme'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-foreground/70',
+              )}
+            >
+              <Palette className="w-4 h-4 opacity-80" />
+              {isOpen && <span className="truncate text-sm">Site theme</span>}
+            </Link>
+            <Link
+              href="/section-styles"
+              className={cn(
+                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
+                pathname === '/section-styles'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-foreground/70',
+              )}
+            >
+              <Layout className="w-4 h-4 opacity-80" />
+              {isOpen && <span className="truncate text-sm">Section styles</span>}
+            </Link>
+            <Link
+              href="/global-presence"
+              className={cn(
+                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+                pathname === '/global-presence'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-foreground/70',
+              )}
+            >
+              <MapPin className="w-4 h-4 opacity-80" />
+              {isOpen && <span className="truncate text-sm">Global Presence</span>}
+            </Link>
+            <Link
+              href="/page-manager"
+              className={cn(
+                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
+                pathname === '/page-manager'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-foreground/70',
+              )}
+            >
+              <LayoutDashboard className="w-4 h-4 opacity-80" />
+              {isOpen && <span className="truncate text-sm">Page Manager</span>}
+            </Link>
+
+            {/* Render Folders */}
+            {folders.map((folder) => {
+              const isExpanded = !!expandedItems[folder.id];
+              const isTarget = dropTargetId === folder.id;
+              const folderCollections = collections.filter(c => (c as any).folder_id === folder.id);
+
               return (
-                <Link
-                  key={c.id}
-                  href={`/collections/${c.id}?collectionName=${c.name}`}
+                <div
+                  key={folder.id}
                   className={cn(
-                    'group flex items-center text-foreground justify-between rounded-lg transition-all duration-200',
-                    isOpen ? 'px-3 py-2.5 gap-2' : 'px-3 py-2.5 justify-center',
-                    'hover:bg-accent',
-                    isActive
-                      ? 'bg-primary text-primary-foreground hover:text-primary-foreground shadow-sm'
-                      : 'text-foreground/80 hover:text-foreground'
+                    "mb-1 transition-all rounded-lg",
+                    isTarget && "bg-primary/10 ring-2 ring-primary/30"
                   )}
-                  title={!isOpen ? c.display_name : undefined}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (draggedCollectionId) setDropTargetId(folder.id);
+                  }}
+                  onDragLeave={() => setDropTargetId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (draggedCollectionId) handleMoveCollection(draggedCollectionId, folder.id);
+                  }}
                 >
-                  <span className={cn('flex items-center gap-2 flex-1 min-w-0', !isOpen && 'justify-center')}>
-                    {c.icon && (
-                      <span
-                        className={cn(
-                          'text-base flex-shrink-0',
-                          isActive ? 'text-primary-foreground' : 'text-foreground/60 group-hover:text-foreground'
-                        )}
-                      >
-                        {c.icon}
-                      </span>
-                    )}
-                    {isOpen && <span className="truncate text-sm hover:text-black font-medium">{c.display_name}</span>}
-                  </span>
-                  {isOpen && c.fieldCount !== undefined && c.fieldCount !== null && (
-                    <span
-                      className={cn(
-                        'ml-2 px-2 py-0.5 rounded-md text-xs font-semibold flex-shrink-0',
-                        isActive
-                          ? 'bg-primary-foreground/20 text-primary-foreground'
-                          : 'bg-accent text-foreground/60 group-hover:bg-accent group-hover:text-black'
-                      )}
-                    >
-                      {c.fieldCount}
+                  <div 
+                    className="flex items-center justify-between px-3 py-2 hover:bg-accent rounded-lg cursor-pointer group"
+                    onClick={() => toggleExpand(folder.id)}
+                  >
+                    <span className="flex items-center gap-2 text-foreground/80 font-semibold text-xs uppercase tracking-wider">
+                      {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                      <Folder className="w-3.5 h-3.5 fill-current opacity-60" />
+                      {isOpen && <span>{folder.name}</span>}
                     </span>
+                  </div>
+                  {isExpanded && isOpen && (
+                    <div className="ml-4 space-y-1 mt-1 border-l border-border/60 pl-2">
+                      {folderCollections.map(renderCollectionItem)}
+                    </div>
                   )}
-                </Link>
+                </div>
               );
             })}
+
+            {/* Render Root Collections (Uncategorized) */}
+            <div 
+              className={cn("mt-4 pt-4 border-t border-border/40", dropTargetId === 'root' && "bg-primary/5")}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDropTargetId('root');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggedCollectionId) handleMoveCollection(draggedCollectionId, null);
+              }}
+            >
+              {isOpen && <p className="px-3 text-[10px] font-bold text-muted-foreground uppercase mb-2">Uncategorized</p>}
+              {collections.filter(c => !(c as any).folder_id).map(renderCollectionItem)}
+            </div>
           </nav>
         )}
       </div>
 
       {/* Add Button */}
       {isSuperadmin && (
-        <div className="border-t border-border px-3 py-3 flex-shrink-0">
+        <div className="border-t border-border px-3 py-3 flex-shrink-0 space-y-2">
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn('w-full text-muted-foreground hover:text-primary', isOpen ? 'justify-start gap-2' : 'justify-center')}
+              >
+                <FolderPlus className="w-4 h-4" />
+                {isOpen && <span className="text-xs">Add Section</span>}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create Sidebar Section</DialogTitle></DialogHeader>
+              <div className="py-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>Section Name</Label>
+                  <Input 
+                    value={newFolderName} 
+                    onChange={(e) => setNewFolderName(e.target.value)} 
+                    placeholder="e.g. About Us" 
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCreateFolder}>Create</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Link href="/">
             <Button
               variant="outline"
