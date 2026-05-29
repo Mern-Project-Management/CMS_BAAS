@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Loader2, Plus, Database, ChevronRight, ChevronDown, FileText, Folder, FolderPlus, MoreVertical, Trash2, Palette, Layout, MapPin } from 'lucide-react';
+import { Loader2, Plus, Database, ChevronRight, ChevronDown, FileText, Folder, FolderPlus, MoreVertical, Trash2, Palette, Layout, MapPin, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-client';
 import { useSidebar } from '@/components/context/sidebar-context';
@@ -230,7 +230,7 @@ export function Sidebar() {
             <Link
               href="/global-presence"
               className={cn(
-                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
+                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
                 pathname === '/global-presence'
                   ? 'bg-primary text-primary-foreground font-medium'
                   : 'text-foreground/70',
@@ -238,6 +238,18 @@ export function Sidebar() {
             >
               <MapPin className="w-4 h-4 opacity-80" />
               {isOpen && <span className="truncate text-sm">Global Presence</span>}
+            </Link>
+            <Link
+              href="/page-manager"
+              className={cn(
+                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
+                pathname === '/page-manager'
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-foreground/70',
+              )}
+            >
+              <LayoutDashboard className="w-4 h-4 opacity-80" />
+              {isOpen && <span className="truncate text-sm">Page Manager</span>}
             </Link>
 
             {/* Render Folders */}
