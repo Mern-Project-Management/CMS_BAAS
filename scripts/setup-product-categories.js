@@ -5,7 +5,7 @@
  *   node scripts/setup-product-categories.js
  * 
  * Requirements:
- *   - jayshree_blogs API running on http://localhost:3000
+ *   - jayshree_blogs API running on https://branduntold.vercel.app
  *   - Valid auth token (set in .env or hardcode for testing)
  */
 
@@ -13,7 +13,7 @@ const http = require('http');
 const https = require('https');
 
 // Configuration
-const API_BASE = process.env.API_URL || 'http://localhost:3000';
+const API_BASE = process.env.API_URL || 'https://branduntold.vercel.app';
 const AUTH_TOKEN = process.env.AUTH_TOKEN || 'your-token-here';
 
 const COLLECTION_NAME = 'product_categories';

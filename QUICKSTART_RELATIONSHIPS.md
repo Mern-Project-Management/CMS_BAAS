@@ -27,7 +27,7 @@ Make sure MongoDB is running and connected. Your project already supports this.
 
 ### Or using API:
 ```bash
-curl -X POST http://localhost:3000/api/collections \
+curl -X POST https://branduntold.vercel.app/api/collections \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -55,7 +55,7 @@ curl -X POST http://localhost:3000/api/collections \
 
 ### Field 1: Name
 ```bash
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -70,7 +70,7 @@ curl -X POST http://localhost:3000/api/fields \
 
 ### Field 2: Parent Category (THE KEY FIELD FOR HIERARCHY)
 ```bash
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -86,7 +86,7 @@ curl -X POST http://localhost:3000/api/fields \
 
 ### Field 3: Slug (for URLs)
 ```bash
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -103,7 +103,7 @@ curl -X POST http://localhost:3000/api/fields \
 
 ### Top-level category:
 ```bash
-curl -X POST http://localhost:3000/api/data/categories \
+curl -X POST https://branduntold.vercel.app/api/data/categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -128,7 +128,7 @@ curl -X POST http://localhost:3000/api/data/categories \
 
 ### Sub-category:
 ```bash
-curl -X POST http://localhost:3000/api/data/categories \
+curl -X POST https://branduntold.vercel.app/api/data/categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -153,7 +153,7 @@ curl -X POST http://localhost:3000/api/data/categories \
 
 ### Sub-sub-category:
 ```bash
-curl -X POST http://localhost:3000/api/data/categories \
+curl -X POST https://branduntold.vercel.app/api/data/categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -167,19 +167,19 @@ curl -X POST http://localhost:3000/api/data/categories \
 
 ### Get all top-level categories:
 ```bash
-curl http://localhost:3000/api/data/categories \
+curl https://branduntold.vercel.app/api/data/categories \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### Get all subcategories of Electronics:
 ```bash
-curl "http://localhost:3000/api/data/categories?parent_id=ELECTRONICS_ID" \
+curl "https://branduntold.vercel.app/api/data/categories?parent_id=ELECTRONICS_ID" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### Get the full hierarchy tree:
 ```bash
-curl http://localhost:3000/api/hierarchies/YOUR_COLLECTION_ID \
+curl https://branduntold.vercel.app/api/hierarchies/YOUR_COLLECTION_ID \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -219,7 +219,7 @@ curl http://localhost:3000/api/hierarchies/YOUR_COLLECTION_ID \
 
 Get the full path from root to Android Phones:
 ```bash
-curl http://localhost:3000/api/breadcrumbs/YOUR_COLLECTION_ID/66a98767 \
+curl https://branduntold.vercel.app/api/breadcrumbs/YOUR_COLLECTION_ID/66a98767 \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -296,7 +296,7 @@ Now create a separate Blog collection that references categories:
 
 ### Create blogs collection:
 ```bash
-curl -X POST http://localhost:3000/api/collections \
+curl -X POST https://branduntold.vercel.app/api/collections \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -308,7 +308,7 @@ curl -X POST http://localhost:3000/api/collections \
 
 ### Add title field:
 ```bash
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -322,7 +322,7 @@ curl -X POST http://localhost:3000/api/fields \
 
 ### Add category field (linking to categories):
 ```bash
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -337,7 +337,7 @@ curl -X POST http://localhost:3000/api/fields \
 
 ### Create a blog post:
 ```bash
-curl -X POST http://localhost:3000/api/data/blogs \
+curl -X POST https://branduntold.vercel.app/api/data/blogs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{

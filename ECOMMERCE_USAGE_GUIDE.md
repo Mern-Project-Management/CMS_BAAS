@@ -30,7 +30,7 @@ COLLECTION_ID=66a4f2b1c3d5e6f7g8h9i0j1
 
 ### Create products collection:
 ```bash
-curl -X POST http://localhost:3000/api/collections \
+curl -X POST https://branduntold.vercel.app/api/collections \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -43,7 +43,7 @@ curl -X POST http://localhost:3000/api/collections \
 ### Add product fields:
 ```bash
 # Product name
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -55,7 +55,7 @@ curl -X POST http://localhost:3000/api/fields \
   }'
 
 # Link to category (THE KEY FIELD!)
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -68,7 +68,7 @@ curl -X POST http://localhost:3000/api/fields \
   }'
 
 # Price
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -80,7 +80,7 @@ curl -X POST http://localhost:3000/api/fields \
   }'
 
 # Image
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -91,7 +91,7 @@ curl -X POST http://localhost:3000/api/fields \
   }'
 
 # Description
-curl -X POST http://localhost:3000/api/fields \
+curl -X POST https://branduntold.vercel.app/api/fields \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -108,7 +108,7 @@ curl -X POST http://localhost:3000/api/fields \
 
 ```bash
 # Create product in Android Phones category
-curl -X POST http://localhost:3000/api/data/products \
+curl -X POST https://branduntold.vercel.app/api/data/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{
@@ -120,7 +120,7 @@ curl -X POST http://localhost:3000/api/data/products \
   }'
 
 # Create product in iPhone category
-curl -X POST http://localhost:3000/api/data/products \
+curl -X POST https://branduntold.vercel.app/api/data/products \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{

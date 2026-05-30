@@ -50,13 +50,13 @@ npm run dev
 ```
 
 - [ ] Server started successfully
-- [ ] Output shows: "Local: http://localhost:3000"
+- [ ] Output shows: "Local: https://branduntold.vercel.app"
 - [ ] No red error messages
 
 ## Step 7: Access Application (1 minute)
 
 - [ ] Open browser
-- [ ] Go to `http://localhost:3000`
+- [ ] Go to `https://branduntold.vercel.app`
 - [ ] Page loads without errors
 - [ ] See "Dynamic Schema Builder" heading
 - [ ] See "New Collection" button

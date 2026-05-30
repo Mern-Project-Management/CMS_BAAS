@@ -67,7 +67,7 @@ GET /api/breadcrumbs/COLLECTION_ID/ANDROID_PHONES_ID
 
 ### Get All Top-Level Categories
 ```bash
-curl http://localhost:3000/api/data/product_categories?parent_id=null \
+curl https://branduntold.vercel.app/api/data/product_categories?parent_id=null \
   -H "Authorization: Bearer TOKEN"
 ```
 **Response**: All categories where parent_id is null
@@ -76,7 +76,7 @@ curl http://localhost:3000/api/data/product_categories?parent_id=null \
 
 ### Get Subcategories of "Electronics"
 ```bash
-curl "http://localhost:3000/api/data/product_categories?parent_id=ELECTRONICS_ID" \
+curl "https://branduntold.vercel.app/api/data/product_categories?parent_id=ELECTRONICS_ID" \
   -H "Authorization: Bearer TOKEN"
 ```
 **Response**: All categories with parent_id = ELECTRONICS_ID
@@ -85,7 +85,7 @@ curl "http://localhost:3000/api/data/product_categories?parent_id=ELECTRONICS_ID
 
 ### Get Complete Hierarchy Tree
 ```bash
-curl http://localhost:3000/api/hierarchies/COLLECTION_ID \
+curl https://branduntold.vercel.app/api/hierarchies/COLLECTION_ID \
   -H "Authorization: Bearer TOKEN"
 ```
 **Response**:
@@ -120,7 +120,7 @@ curl http://localhost:3000/api/hierarchies/COLLECTION_ID \
 
 ### Get Breadcrumb Path (for URLs)
 ```bash
-curl http://localhost:3000/api/breadcrumbs/COLLECTION_ID/ANDROID_PHONES_ID \
+curl https://branduntold.vercel.app/api/breadcrumbs/COLLECTION_ID/ANDROID_PHONES_ID \
   -H "Authorization: Bearer TOKEN"
 ```
 **Response**: Path from root to Android Phones
@@ -141,7 +141,7 @@ curl http://localhost:3000/api/breadcrumbs/COLLECTION_ID/ANDROID_PHONES_ID \
 
 ### Step 1: Top-Level
 ```bash
-curl -X POST http://localhost:3000/api/data/product_categories \
+curl -X POST https://branduntold.vercel.app/api/data/product_categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
   -d '{"category":"Electronics","parent_id":null,"slug":"electronics"}'
@@ -152,7 +152,7 @@ curl -X POST http://localhost:3000/api/data/product_categories \
 
 ### Step 2: Sub-Category
 ```bash
-curl -X POST http://localhost:3000/api/data/product_categories \
+curl -X POST https://branduntold.vercel.app/api/data/product_categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
   -d '{"category":"Smartphones","parent_id":"CAT_1","slug":"smartphones"}'
@@ -163,7 +163,7 @@ curl -X POST http://localhost:3000/api/data/product_categories \
 
 ### Step 3: Sub-Sub-Category
 ```bash
-curl -X POST http://localhost:3000/api/data/product_categories \
+curl -X POST https://branduntold.vercel.app/api/data/product_categories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
   -d '{"category":"Android","parent_id":"CAT_2","slug":"android"}'
@@ -260,7 +260,7 @@ import { HierarchicalBreadcrumb } from '@/components/hierarchical-breadcrumb';
 ### "Collection not found"
 ```bash
 # Check collection exists
-curl http://localhost:3000/api/collections \
+curl https://branduntold.vercel.app/api/collections \
   -H "Authorization: Bearer TOKEN"
 # Find your product_categories in the list
 ```
@@ -386,11 +386,11 @@ GET /api/data/products?category_id=ANDROID_PHONES_ID
 
 Save in `.env.local`:
 ```
-NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=https://branduntold.vercel.app
 AUTH_TOKEN=your_token_here
 
 # For setup script
-API_URL=http://localhost:3000
+API_URL=https://branduntold.vercel.app
 ```
 
 ---
@@ -438,7 +438,7 @@ node scripts/setup-product-categories.js
 COLLECTION_ID="YOUR_ID_HERE"
 
 # 3. Get full tree
-curl http://localhost:3000/api/hierarchies/$COLLECTION_ID \
+curl https://branduntold.vercel.app/api/hierarchies/$COLLECTION_ID \
   -H "Authorization: Bearer TOKEN"
 
 # 4. You're done! Use in components

@@ -171,7 +171,7 @@ node scripts/setup-product-categories.js
 #### Option 2: Manual API Calls (See SCHEMA_SETUP_PRODUCT_CATEGORIES.md)
 ```bash
 # 1. Create collection
-curl -X POST http://localhost:3000/api/collections ...
+curl -X POST https://branduntold.vercel.app/api/collections ...
 
 # 2. Add all 19 fields via /api/fields
 # 3. Create categories via /api/data/product_categories
@@ -352,7 +352,7 @@ async function migrateData() {
 
   // Import to jayshree_blogs via API
   for (const cat of flattened) {
-    await axios.post('http://localhost:3000/api/data/product_categories', cat, {
+    await axios.post('https://branduntold.vercel.app/api/data/product_categories', cat, {
       headers: {
         Authorization: `Bearer YOUR_TOKEN`
       }
@@ -407,19 +407,19 @@ node scripts/setup-product-categories.js
 # Copy it for next commands
 
 # 3. Get full tree
-curl http://localhost:3000/api/hierarchies/COLLECTION_ID \
+curl https://branduntold.vercel.app/api/hierarchies/COLLECTION_ID \
   -H "Authorization: Bearer TOKEN"
 
 # 4. Get top-level categories
-curl "http://localhost:3000/api/data/product_categories?parent_id=null" \
+curl "https://branduntold.vercel.app/api/data/product_categories?parent_id=null" \
   -H "Authorization: Bearer TOKEN"
 
 # 5. Get children of Electronics
-curl "http://localhost:3000/api/data/product_categories?parent_id=ELECTRONICS_ID" \
+curl "https://branduntold.vercel.app/api/data/product_categories?parent_id=ELECTRONICS_ID" \
   -H "Authorization: Bearer TOKEN"
 
 # 6. Get breadcrumb
-curl http://localhost:3000/api/breadcrumbs/COLLECTION_ID/RECORD_ID \
+curl https://branduntold.vercel.app/api/breadcrumbs/COLLECTION_ID/RECORD_ID \
   -H "Authorization: Bearer TOKEN"
 ```
 

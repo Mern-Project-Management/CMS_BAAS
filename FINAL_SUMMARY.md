@@ -257,7 +257,7 @@ Beyond what you asked for, you also got:
 
 2. ⬜ **Test** - Get your Collection ID and run API calls
    ```bash
-   curl http://localhost:3000/api/hierarchies/COLLECTION_ID
+   curl https://branduntold.vercel.app/api/hierarchies/COLLECTION_ID
    ```
 
 3. ⬜ **Create Data** - Add your actual categories
