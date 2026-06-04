@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
           type: file.type,
         },
         message: 'File uploaded successfully',
-      } as ApiResponse<typeof publicUrl>,
+      } as ApiResponse<any>,
       { status: 200 }
     );
   } catch (error) {
