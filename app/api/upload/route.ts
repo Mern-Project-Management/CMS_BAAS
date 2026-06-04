@@ -4,6 +4,14 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { requireAuth } from '@/lib/auth';
 import type { ApiResponse } from '@/lib/types';
+import { v2 } from 'cloudinary';
+
+// Cloudinary configuration
+v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads');
 
@@ -78,8 +86,6 @@ export async function POST(request: NextRequest) {
   try {
     await requireAuth();
 
-    await ensureUploadDir();
-
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const fieldType = formData.get('fieldType') as string;
@@ -103,20 +109,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if Cloudinary is configured
+    const isCloudinaryConfigured = 
+      process.env.CLOUDINARY_CLOUD_NAME && 
+      process.env.CLOUDINARY_API_KEY && 
+      process.env.CLOUDINARY_API_SECRET;
+
     // Generate unique filename
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 15);
     const ext = file.name.split('.').pop() || '';
     const filename = `${timestamp}-${randomStr}.${ext}`;
-    const filepath = join(UPLOAD_DIR, filename);
 
-    // Save file
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
 
-    // Return public URL
-    const publicUrl = `/uploads/${filename}`;
+    let publicUrl: string;
+
+    if (isCloudinaryConfigured) {
+      // Upload to Cloudinary
+      const buffer = Buffer.from(bytes);
+      const base64Image = buffer.toString('base64');
+      const dataUrl = `data:${file.type};base64,${base64Image}`;
+
+      const result = await v2.uploader.upload(dataUrl, {
+        folder: 'jayshree_cms',
+        resource_type: 'auto',
+        public_id: filename.replace(`.${ext}`, ''),
+        overwrite: false,
+        invalidate: true,
+      });
+
+      publicUrl = result.secure_url;
+    } else {
+      // Fallback: Save locally (for local development)
+      await ensureUploadDir();
+      const filepath = join(UPLOAD_DIR, filename);
+      const buffer = Buffer.from(bytes);
+      await writeFile(filepath, buffer);
+      publicUrl = `/uploads/${filename}`;
+    }
 
     return NextResponse.json(
       {
@@ -140,7 +171,7 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { success: false, error: 'Failed to upload file' } as ApiResponse<null>,
+      { success: false, error: error instanceof Error ? error.message : 'Failed to upload file' } as ApiResponse<null>,
       { status: 500 }
     );
   }
