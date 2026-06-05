@@ -7,26 +7,35 @@ import {
   getCollectionFields,
   getDb,
   normalizeDocId,
-  oid
+  oid,
+  resolveRelationCollectionName,
 } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import type { ApiResponse } from '@/lib/types';
+import type { ApiResponse, CollectionWithFields } from '@/lib/types';
+
+const slugify = (text: string) => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/[\s_-]+/g, '-')  // Replace spaces/underscores with dashes
+    .replace(/^-+|-+$/g, '');   // Trim leading/trailing dashes
+};
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ collectionId: string }> }
 ) {
   try {
-    // await requireAuth();
     const { collectionId } = await params;
 
     // 1. Resolve the collection name
-    let collection: any = (await getCollection(collectionId)).data;
+    let collection: CollectionWithFields | null = (await getCollection(collectionId)).data;
     
     // If not found by ID, try finding by name (slug)
     if (!collection) {
-      const { data: byName } = (await getCollectionByName(collectionId)) as any;
-      collection = byName;
+      const { data: byName } = await getCollectionByName(collectionId);
+      collection = byName ? { ...byName, fields: byName.fields || [] } : null;
     }
 
     if (!collection) {
@@ -58,27 +67,34 @@ export async function GET(
         if (field.field_type === 'Relation' && field.relation_to_collection && record[field.name]) {
           try {
             const targetOid = oid(record[field.name]);
-            if (targetOid) {
-              const relatedDoc = await db.collection(field.relation_to_collection).findOne({ _id: targetOid });
-              if (relatedDoc) {
-                const populated = normalizeDocId(relatedDoc);
-                
-                // Deep population for hierarchy (self-relations)
-                // This allows seeing grandparent info for Sub-Sub-Children
-                if (field.relation_to_collection === collection.name && populated[field.name]) {
-                  const gpOid = oid(populated[field.name]);
-                  if (gpOid) {
-                    const gpDoc = await db.collection(field.relation_to_collection).findOne({ _id: gpOid });
-                    if (gpDoc) {
-                      populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
-                    }
+            if (!targetOid) continue;
+
+            const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+            if (!targetCollectionName) continue;
+
+            const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
+            if (!relatedDoc) continue;
+
+            const populated = normalizeDocId(relatedDoc);
+
+            // Deep population for hierarchy (self-relations)
+            if (targetCollectionName === collection.name && populated[field.name]) {
+              const gpOid = oid(populated[field.name]);
+              if (gpOid) {
+                const gpCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+                if (gpCollectionName) {
+                  const gpDoc = await db.collection(gpCollectionName).findOne({ _id: gpOid });
+                  if (gpDoc) {
+                    populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
                   }
                 }
-                
-                record[`${field.name}_populated`] = populated;
               }
             }
-          } catch (e) {}
+
+            record[`${field.name}_populated`] = populated;
+          } catch (e) {
+            // ignore population errors for individual fields
+          }
         }
       }
       return record;
@@ -88,7 +104,6 @@ export async function GET(
       success: true,
       data: populatedRecords,
     } as ApiResponse<any>, { status: 200 });
-
   } catch (error: any) {
     console.error('Data GET Error:', error);
 
@@ -118,11 +133,11 @@ export async function POST(
     const { collectionId } = await params;
 
     // 1. Resolve the collection name
-    let collection: any = (await getCollection(collectionId)).data;
+    let collection: CollectionWithFields | null = (await getCollection(collectionId)).data;
     
     if (!collection) {
-      const { data: byName } = (await getCollectionByName(collectionId)) as any;
-      collection = byName;
+      const { data: byName } = await getCollectionByName(collectionId);
+      collection = byName ? { ...byName, fields: byName.fields || [] } : null;
     }
 
     if (!collection) {
@@ -132,7 +147,26 @@ export async function POST(
     // 2. Parse request body
     const body = await request.json();
     const db = await getDb();
-    
+
+    // Sanitize the slug provided by the frontend
+    // This ensures that even if the user manually typed " My Page ", it's saved as "my-page"
+    if (body.slug && typeof body.slug === 'string') {
+      body.slug = slugify(body.slug);
+    }
+
+    // Ensure slug uniqueness within the collection (Collision Avoidance)
+    if (body.slug && typeof body.slug === 'string') {
+      const baseSlug = body.slug;
+      let uniqueSlug = baseSlug;
+      let counter = 1;
+      
+      while (await db.collection(collection.name).findOne({ slug: uniqueSlug })) {
+        uniqueSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+      body.slug = uniqueSlug;
+    }
+
     // 3. Insert record with timestamps
     const now = new Date().toISOString();
     const doc = {
@@ -150,25 +184,31 @@ export async function POST(
       if (field.field_type === 'Relation' && field.relation_to_collection && normalizedRecord[field.name]) {
         try {
           const targetOid = oid(normalizedRecord[field.name]);
-          if (targetOid) {
-            const relatedDoc = await db.collection(field.relation_to_collection).findOne({ _id: targetOid });
-            if (relatedDoc) {
-              const populated = normalizeDocId(relatedDoc);
-              
-              // Deep population for hierarchy (self-relations)
-              if (field.relation_to_collection === collection.name && populated[field.name]) {
-                const gpOid = oid(populated[field.name]);
-                if (gpOid) {
-                  const gpDoc = await db.collection(field.relation_to_collection).findOne({ _id: gpOid });
-                  if (gpDoc) {
-                    populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
-                  }
+          if (!targetOid) continue;
+
+          const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+          if (!targetCollectionName) continue;
+
+          const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
+          if (!relatedDoc) continue;
+
+          const populated = normalizeDocId(relatedDoc);
+
+          // Deep population for hierarchy (self-relations)
+          if (targetCollectionName === collection.name && populated[field.name]) {
+            const gpOid = oid(populated[field.name]);
+            if (gpOid) {
+              const gpCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+              if (gpCollectionName) {
+                const gpDoc = await db.collection(gpCollectionName).findOne({ _id: gpOid });
+                if (gpDoc) {
+                  populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
                 }
               }
-              
-              normalizedRecord[`${field.name}_populated`] = populated;
             }
           }
+
+          normalizedRecord[`${field.name}_populated`] = populated;
         } catch (e) {}
       }
     }

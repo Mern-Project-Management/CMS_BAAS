@@ -13,8 +13,8 @@ Get your Dynamic Schema Builder up and running in 5 minutes!
 1. Create `.env.local` in your project root:
 
 ```env
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/CMS?retryWrites=true&w=majority
-MONGODB_DB=CMS
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/jayshree_blogs?retryWrites=true&w=majority
+MONGODB_DB=jayshree_blogs
 ```
 
 ## Step 3: Install & Run (2 minutes)
@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [https://branduntold.in](https://branduntold.in) in your browser.
 
 ## First Steps
 

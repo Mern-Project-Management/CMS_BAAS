@@ -3,7 +3,7 @@ import { mongoClientPromise } from '@/lib/mongodb';
 import type { Collection, CollectionWithFields, Field, User, UserRole } from '@/lib/types';
 import crypto from 'crypto';
 
-const dbName = process.env.MONGODB_DB || 'CMS';
+const dbName = process.env.MONGODB_DB || 'jayshree_blogs';
 
 function nowIso() {
   return new Date().toISOString();
@@ -25,6 +25,30 @@ export function normalizeDocId<T extends { _id: ObjectId }>(doc: T) {
 export async function getDb() {
   const client = await mongoClientPromise;
   return client.db(dbName);
+}
+
+// Resolve relation_to_collection value to an actual collection name
+export async function resolveRelationCollectionName(relation: string | null | undefined) {
+  if (!relation) return null;
+  const db = await getDb();
+
+  // If a collection with this name exists, use it directly
+  try {
+    const exists = await db.listCollections({ name: relation }).toArray();
+    if (exists.length > 0) return relation;
+  } catch (e) {
+    // ignore and continue
+  }
+
+  // Otherwise, if the relation looks like an ObjectId, try to resolve to a collection name
+  try {
+    const colDoc = await db.collection('collections').findOne({ _id: oid(String(relation)) });
+    if (colDoc && (colDoc as any).name) return (colDoc as any).name;
+  } catch (e) {
+    // ignore
+  }
+
+  return null;
 }
 
 // Get all collections with optional fieldCount

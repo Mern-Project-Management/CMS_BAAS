@@ -1,4 +1,4 @@
-# 🔗 Implementing Relationship-Based Schemas in Your CMS
+# 🔗 Implementing Relationship-Based Schemas in Your jayshree_blogs
 
 ## 📋 Table of Contents
 1. [Current Project Overview](#current-project-overview)
@@ -12,7 +12,7 @@
 
 ## Current Project Overview
 
-Your CMS/BaaS is a **dynamic schema builder** built with:
+Your jayshree_blogs/BaaS is a **dynamic schema builder** built with:
 - **Frontend**: Next.js 16 + React 19 + Tailwind CSS + shadcn/ui
 - **Backend**: Next.js API Routes
 - **Database**: MongoDB

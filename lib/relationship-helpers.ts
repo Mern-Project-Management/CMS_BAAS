@@ -4,7 +4,7 @@
  */
 
 import { ObjectId } from 'mongodb';
-import { getDb, oid, normalizeDocId } from './db';
+import { getDb, oid, normalizeDocId, resolveRelationCollectionName } from './db';
 
 /**
  * Get a single record with populated relationships
@@ -40,19 +40,21 @@ export async function getRecordWithPopulation(
     }
 
     try {
-      const relatedCollection = db.collection(field.relation_to_collection);
+      const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+      if (!targetCollectionName) {
+        record[`${field.name}_populated`] = null;
+        continue;
+      }
+
       const relatedOid = oid(relatedId);
       if (!relatedOid) {
         record[`${field.name}_populated`] = null;
         continue;
       }
-      const relatedRecord = await relatedCollection.findOne({
-        _id: relatedOid,
-      });
 
-      record[`${field.name}_populated`] = relatedRecord
-        ? normalizeDocId(relatedRecord)
-        : null;
+      const relatedRecord = await db.collection(targetCollectionName).findOne({ _id: relatedOid });
+
+      record[`${field.name}_populated`] = relatedRecord ? normalizeDocId(relatedRecord) : null;
     } catch (error) {
       console.error(
         `Error populating ${field.name} from ${field.relation_to_collection}:`,

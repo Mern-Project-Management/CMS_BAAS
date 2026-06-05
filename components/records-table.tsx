@@ -21,9 +21,13 @@ import { useToast } from '@/hooks/use-toast';
 import { FilePreview } from './file-preview';
 import { MultiImageUpload } from './multi-image-upload';
 import { FileUpload } from './file-upload';
-import { ColorField, ColorSwatch } from './color-field';
-import { TipTapEditor } from './tiptap-editor';
 import { HierarchicalSelector } from './hierarchical-selector';
+import { TipTapEditor } from './tiptap-editor';
+<<<<<<< HEAD
+import { HierarchicalSelector } from './hierarchical-selector';
+=======
+import { ColorField } from './color-field';
+>>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
 import { Eye, Pencil, Trash2, Columns3, X, Save } from 'lucide-react';
 import type { Field } from '@/lib/types';
 
@@ -261,7 +265,11 @@ export function RecordsTable({
         if (!field.relation_to_collection) {
           return (
             <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+<<<<<<< HEAD
               Relation target collection is not configured.
+=======
+              Relation target collection is not configured for this field.
+>>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
             </div>
           );
         }
@@ -591,7 +599,7 @@ function renderViewValue(record: RecordRow, field: Field) {
 // ── Table cell value renderer (compact) ──
 function resolvePopulatedLabel(obj: any): string {
   if (!obj || typeof obj !== 'object') return '';
-  const label = obj.category_name || obj.display_name || obj.name || obj.title || obj.label || obj.slug || obj.id;
+  const label = obj.category || obj.category_name || obj.display_name || obj.name || obj.title || obj.label || obj.slug || obj.id;
   const nestedKey = Object.keys(obj).find((k) => k.endsWith('_populated'));
   if (nestedKey && obj[nestedKey]) return `${resolvePopulatedLabel(obj[nestedKey])} › ${label}`;
   return label || 'Unnamed';

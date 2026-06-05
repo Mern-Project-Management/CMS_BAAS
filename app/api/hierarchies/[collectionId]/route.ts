@@ -6,9 +6,9 @@ import {
   getDb,
   normalizeDocId,
   oid,
+  resolveRelationCollectionName,
 } from '@/lib/db';
 
-import { requireAuth } from '@/lib/auth';
 import type { ApiResponse, CollectionWithFields, Field } from '@/lib/types';
 
 async function buildTree(
@@ -68,6 +68,7 @@ async function buildTree(
       for (const field of fields) {
         if (field.field_type === 'Relation' && field.relation_to_collection && normalized[field.name]) {
           try {
+<<<<<<< HEAD
             const val = normalized[field.name];
             const targetOid = oid(val);
             if (targetOid || val) {
@@ -77,6 +78,17 @@ async function buildTree(
               if (relatedDoc) {
                 normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
               }
+=======
+            const targetOid = oid(normalized[field.name]);
+            if (!targetOid) continue;
+
+            const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+            if (!targetCollectionName) continue;
+
+            const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
+            if (relatedDoc) {
+              normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
+>>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
             }
           } catch (e) {
             // Silently skip if related document lookup fails
@@ -109,8 +121,6 @@ export async function GET(
   context: { params: Promise<{ collectionId: string }> }
 ) {
   try {
-    await requireAuth();
-
     const { collectionId } = await context.params;
 
     // Resolve collection metadata
@@ -179,16 +189,6 @@ export async function GET(
     );
   } catch (error: any) {
     console.error('Hierarchy API Error:', error);
-
-    if (error.message === 'Unauthorized') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-        },
-        { status: 401 }
-      );
-    }
 
     return NextResponse.json(
       {

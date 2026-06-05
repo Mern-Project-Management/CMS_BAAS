@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ImagePlus, X, Images } from 'lucide-react';
@@ -18,9 +18,15 @@ export function MultiImageUpload({ value = [], onChange, required, maxImages = 2
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const images = Array.isArray(value) ? value.filter(Boolean) : [];
+  // Update images when value prop changes (for edit mode)
+  useEffect(() => {
+    const imgArray = Array.isArray(value) ? value.filter(Boolean) : [];
+    setImages(imgArray);
+  }, [value]);
+
   const canAddMore = images.length < maxImages;
   const remaining = maxImages - images.length;
 
@@ -67,7 +73,9 @@ export function MultiImageUpload({ value = [], onChange, required, maxImages = 2
     }
 
     if (results.length > 0) {
-      onChange([...images, ...results]);
+      const newImages = [...images, ...results];
+      setImages(newImages);
+      onChange(newImages);
       toast({ title: `${results.length} image${results.length > 1 ? 's' : ''} uploaded` });
     }
 
@@ -89,13 +97,16 @@ export function MultiImageUpload({ value = [], onChange, required, maxImages = 2
   }
 
   function removeImage(index: number) {
-    onChange(images.filter((_, i) => i !== index));
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    onChange(newImages);
   }
 
   function moveImage(from: number, to: number) {
     const next = [...images];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
+    setImages(next);
     onChange(next);
   }
 

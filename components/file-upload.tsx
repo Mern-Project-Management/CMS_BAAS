@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
@@ -19,6 +19,21 @@ export function FileUpload({ field, value, onChange, required }: Props) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(value || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initializedRef = useRef(false);
+
+  // Update preview when value prop changes (for edit mode)
+  useEffect(() => {
+    setPreview(value || null);
+  }, [value]);
+
+  // Initialize preview from value prop on first mount (for edit mode)
+  useEffect(() => {
+    if (value && !initializedRef.current) {
+      initializedRef.current = true;
+      setPreview(value);
+      onChange(value);
+    }
+  }, []);
 
   const isImage = field.field_type === 'Image';
   const acceptedTypes = isImage

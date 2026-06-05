@@ -23,7 +23,7 @@ Follow this checklist to get your Dynamic Schema Builder running in minutes.
 - [ ] Paste these lines:
 ```env
 MONGODB_URI=paste_your_mongodb_connection_string_here
-MONGODB_DB=CMS
+MONGODB_DB=jayshree_blogs
 ```
 - [ ] Replace values with your actual MongoDB connection string
 - [ ] Save the file
@@ -50,13 +50,13 @@ npm run dev
 ```
 
 - [ ] Server started successfully
-- [ ] Output shows: "Local: http://localhost:3000"
+- [ ] Output shows: "Local: https://branduntold.in"
 - [ ] No red error messages
 
 ## Step 7: Access Application (1 minute)
 
 - [ ] Open browser
-- [ ] Go to `http://localhost:3000`
+- [ ] Go to `https://branduntold.in`
 - [ ] Page loads without errors
 - [ ] See "Dynamic Schema Builder" heading
 - [ ] See "New Collection" button
