@@ -6,12 +6,18 @@ import { requireAuth } from '@/lib/auth';
 import type { ApiResponse } from '@/lib/types';
 import { v2 } from 'cloudinary';
 
-// Cloudinary configuration
-v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Cloudinary configuration - use URL format for reliability
+if (process.env.CLOUDINARY_URL) {
+  v2.config({
+    cloudinary_url: process.env.CLOUDINARY_URL,
+  });
+} else if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
 
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads');
 
@@ -111,9 +117,10 @@ export async function POST(request: NextRequest) {
 
     // Check if Cloudinary is configured
     const isCloudinaryConfigured = 
-      process.env.CLOUDINARY_CLOUD_NAME && 
-      process.env.CLOUDINARY_API_KEY && 
-      process.env.CLOUDINARY_API_SECRET;
+      process.env.CLOUDINARY_URL || 
+      (process.env.CLOUDINARY_CLOUD_NAME && 
+       process.env.CLOUDINARY_API_KEY && 
+       process.env.CLOUDINARY_API_SECRET);
 
     // Generate unique filename
     const timestamp = Date.now();
@@ -137,6 +144,9 @@ export async function POST(request: NextRequest) {
         public_id: filename.replace(`.${ext}`, ''),
         overwrite: false,
         invalidate: true,
+      }).catch((err) => {
+        console.error('Cloudinary upload error:', err);
+        throw err;
       });
 
       publicUrl = result.secure_url;
@@ -164,6 +174,11 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Upload error:', error);
+    // Log error details for debugging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' } as ApiResponse<null>,
