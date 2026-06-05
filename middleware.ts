@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Vercel middleware - handles all incoming requests
 export function middleware(request: NextRequest) {
   // Handle all requests
   const response = NextResponse.next();
