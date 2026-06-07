@@ -1,10 +1,3 @@
-// app/api/revalidate/route.ts
-// Call this from your CMS / admin panel whenever hero or about data changes.
-//
-// POST  /api/revalidate?secret=YOUR_SECRET&tag=hero
-// POST  /api/revalidate?secret=YOUR_SECRET&tag=about
-// POST  /api/revalidate?secret=YOUR_SECRET&path=/   ← revalidates whole page
-//
 // Set REVALIDATION_SECRET in your .env (never expose it publicly).
 
 import { revalidatePath, revalidateTag } from 'next/cache';
@@ -21,12 +14,12 @@ export async function POST(req: NextRequest) {
     const path = req.nextUrl.searchParams.get('path');  // e.g. "/"
 
     if (tag) {
-        revalidateTag(tag);
+        revalidateTag(tag, 'page');
         return NextResponse.json({ revalidated: true, type: 'tag', tag });
     }
 
     if (path) {
-        revalidatePath(path);
+        revalidatePath(path, 'page');
         return NextResponse.json({ revalidated: true, type: 'path', path });
     }
 

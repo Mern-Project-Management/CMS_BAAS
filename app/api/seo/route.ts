@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Resolve collection by name or ID
-    let collection = await getCollection(collectionId);
-    if (!collection.data) {
-      collection = await getCollectionByName(collectionId);
-    }
+    const collectionRes = await getCollection(collectionId);
+    const collection = collectionRes.data 
+      ? collectionRes 
+      : await getCollectionByName(collectionId);
 
     if (!collection.data) {
       return NextResponse.json(
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const seoData = records.map((record: any) => ({
+    const seoData = (records || []).map((record: any) => ({
       id: record._id?.toString() || record.id,
       slug: record.slug,
       ...extractSeoFields(record)

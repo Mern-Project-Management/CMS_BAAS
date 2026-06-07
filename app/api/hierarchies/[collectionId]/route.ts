@@ -68,17 +68,6 @@ async function buildTree(
       for (const field of fields) {
         if (field.field_type === 'Relation' && field.relation_to_collection && normalized[field.name]) {
           try {
-<<<<<<< HEAD
-            const val = normalized[field.name];
-            const targetOid = oid(val);
-            if (targetOid || val) {
-              const relatedDoc = await db.collection(field.relation_to_collection).findOne({
-                $or: [{ _id: targetOid }, { _id: val }]
-              });
-              if (relatedDoc) {
-                normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
-              }
-=======
             const targetOid = oid(normalized[field.name]);
             if (!targetOid) continue;
 
@@ -88,7 +77,6 @@ async function buildTree(
             const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
             if (relatedDoc) {
               normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
->>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
             }
           } catch (e) {
             // Silently skip if related document lookup fails
