@@ -49,6 +49,33 @@ body {
     --sidebar-accent-foreground: 180 40% 20%;
     --sidebar-border: 180 15% 88%;
     --sidebar-ring: 180 63% 33%;
+    
+    /* Frontend CSS Variables (synced with SCSS) */
+    --tj-color-common-white: #ffffff;
+    --tj-color-common-black: #000000;
+    --tj-color-heading-primary: #0c1e21;
+    --tj-color-text-body: #364e52;
+    --tj-color-text-body-2: #a9b8b8;
+    --tj-color-text-body-3: #67787a;
+    --tj-color-text-body-4: #18292c;
+    --tj-color-text-body-5: #ffffffcc;
+    --tj-color-theme-primary: #1e8a8a;
+    --tj-color-theme-bg: #d8e5e5;
+    --tj-color-theme-bg-2: #cee0e0;
+    --tj-color-theme-bg-3: #202e30;
+    --tj-color-theme-dark: #0c1e21;
+    --tj-color-theme-dark-2: #18292c;
+    --tj-color-theme-dark-3: #364e52;
+    --tj-color-theme-dark-4: #67787a;
+    --tj-color-theme-dark-5: #676e7a;
+    --tj-color-grey-1: #ecf0f0;
+    --tj-color-grey-2: #a9b8b8;
+    --tj-color-grey-3: #ffffff1a;
+    --tj-color-border-1: #c9d1d1;
+    --tj-color-border-2: #313d3d;
+    --tj-color-border-3: #ffffff26;
+    --tj-color-border-4: #ffffff33;
+    --tj-color-border-5: #1e8a8a26;
   }
   .dark {
     --background: 180 10% 6%;
@@ -85,6 +112,33 @@ body {
     --sidebar-accent-foreground: 180 10% 90%;
     --sidebar-border: 180 12% 18%;
     --sidebar-ring: 180 55% 45%;
+    
+    /* Frontend CSS Variables (synced with SCSS) */
+    --tj-color-common-white: #ffffff;
+    --tj-color-common-black: #000000;
+    --tj-color-heading-primary: #0c1e21;
+    --tj-color-text-body: #364e52;
+    --tj-color-text-body-2: #a9b8b8;
+    --tj-color-text-body-3: #67787a;
+    --tj-color-text-body-4: #18292c;
+    --tj-color-text-body-5: #ffffffcc;
+    --tj-color-theme-primary: #1e8a8a;
+    --tj-color-theme-bg: #d8e5e5;
+    --tj-color-theme-bg-2: #cee0e0;
+    --tj-color-theme-bg-3: #202e30;
+    --tj-color-theme-dark: #0c1e21;
+    --tj-color-theme-dark-2: #18292c;
+    --tj-color-theme-dark-3: #364e52;
+    --tj-color-theme-dark-4: #67787a;
+    --tj-color-theme-dark-5: #676e7a;
+    --tj-color-grey-1: #ecf0f0;
+    --tj-color-grey-2: #a9b8b8;
+    --tj-color-grey-3: #ffffff1a;
+    --tj-color-border-1: #c9d1d1;
+    --tj-color-border-2: #313d3d;
+    --tj-color-border-3: #ffffff26;
+    --tj-color-border-4: #ffffff33;
+    --tj-color-border-5: #1e8a8a26;
   }
 }
 

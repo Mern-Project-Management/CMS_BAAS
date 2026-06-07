@@ -23,7 +23,11 @@ import { MultiImageUpload } from './multi-image-upload';
 import { FileUpload } from './file-upload';
 import { HierarchicalSelector } from './hierarchical-selector';
 import { TipTapEditor } from './tiptap-editor';
+<<<<<<< HEAD
+import { HierarchicalSelector } from './hierarchical-selector';
+=======
 import { ColorField } from './color-field';
+>>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
 import { Eye, Pencil, Trash2, Columns3, X, Save } from 'lucide-react';
 import type { Field } from '@/lib/types';
 
@@ -147,6 +151,11 @@ export function RecordsTable({
         next['slug'] = slugify(String(v));
       }
 
+      // Auto-generate category_slug if category_name is changed
+      if (field.name === 'category_name' && fields.some(f => f.name === 'category_slug')) {
+        next['category_slug'] = slugify(String(v));
+      }
+
       return next;
     });
 
@@ -256,7 +265,11 @@ export function RecordsTable({
         if (!field.relation_to_collection) {
           return (
             <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+<<<<<<< HEAD
+              Relation target collection is not configured.
+=======
               Relation target collection is not configured for this field.
+>>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
             </div>
           );
         }

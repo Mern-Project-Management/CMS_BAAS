@@ -17,7 +17,8 @@ async function buildTree(
   fields: Field[],
   parentId: string | null = null,
   parentFieldName: string = 'parent_id',
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
+  rootQuery: any = null
 ): Promise<any[]> {
   const collection = db.collection(collectionName);
 
@@ -36,22 +37,23 @@ async function buildTree(
   // Define query for the current level.
   // For roots (parentId is null), we strictly check if the hierarchy field is explicitly null or does not exist.
   // Records with an empty string as parent are NOT considered roots here, as they might be intended as children of an empty string parent.
-  const query =
-    parentId === null
-      ? {
-          $or: [
-            { [parentFieldName]: null }, 
-            { [parentFieldName]: '' }, // Treat empty strings as roots for robust fetching
-            { [parentFieldName]: { $exists: false } }
-          ],
-        }
-      : {
-          // Try to cast to ObjectId for the query, fallback to string if invalid
-          $or: [
+  const query = rootQuery 
+    ? rootQuery 
+    : (parentId === null
+        ? {
+            $or: [
+              { [parentFieldName]: null }, 
+              { [parentFieldName]: '' }, // Treat empty strings as roots for robust fetching
+              { [parentFieldName]: { $exists: false } }
+            ],
+          }
+        : {
+            // Try to cast to ObjectId for the query, fallback to string if invalid
+            $or: [
             { [parentFieldName]: oid(parentId) },
             { [parentFieldName]: parentId }
           ]
-        };
+        });
 
   const records = await collection
     .find(query)
@@ -66,6 +68,17 @@ async function buildTree(
       for (const field of fields) {
         if (field.field_type === 'Relation' && field.relation_to_collection && normalized[field.name]) {
           try {
+<<<<<<< HEAD
+            const val = normalized[field.name];
+            const targetOid = oid(val);
+            if (targetOid || val) {
+              const relatedDoc = await db.collection(field.relation_to_collection).findOne({
+                $or: [{ _id: targetOid }, { _id: val }]
+              });
+              if (relatedDoc) {
+                normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
+              }
+=======
             const targetOid = oid(normalized[field.name]);
             if (!targetOid) continue;
 
@@ -75,6 +88,7 @@ async function buildTree(
             const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
             if (relatedDoc) {
               normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
+>>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
             }
           } catch (e) {
             // Silently skip if related document lookup fails
@@ -88,7 +102,8 @@ async function buildTree(
         fields,
         normalized.id,
         parentFieldName,
-        currentVisited
+        currentVisited,
+        null // Recursion should find children by ID, not by the initial filter
       );
 
       return {
@@ -127,9 +142,24 @@ export async function GET(
       );
     }
 
+    const searchParams = request.nextUrl.searchParams;
+
     // Parent field from query param
-    const parentFieldName =
-      request.nextUrl.searchParams.get('parentField') || 'parent_id';
+    const parentFieldName = searchParams.get('parentField') || 'parent_id';
+
+    // Extract all other query parameters as root-level filters for the hierarchy
+    const rootQuery: any = {};
+    let hasFilters = false;
+    searchParams.forEach((value, key) => {
+      if (key !== 'parentField') {
+        if (key === 'id' || key === '_id') {
+          rootQuery['_id'] = oid(value) || value;
+        } else {
+          rootQuery[key] = value;
+        }
+        hasFilters = true;
+      }
+    });
 
     const db = await getDb();
 
@@ -144,8 +174,10 @@ export async function GET(
       db,
       collection.name,
       fields,
-      null,
-      parentFieldName
+      null, // parentId
+      parentFieldName,
+      new Set(), // visited
+      hasFilters ? rootQuery : null
     );
 
     return NextResponse.json(

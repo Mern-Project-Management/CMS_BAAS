@@ -8,12 +8,14 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
+import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table';
 
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, ImagePlus,
   List, ListOrdered, Quote, Code, Minus,
   Link as LinkIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Undo, Redo, Pilcrow,
+  Table as TableIcon, Plus, Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -116,6 +118,27 @@ export function TipTapEditor({
         placeholder,
         showOnlyWhenEditable: true,
       }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse border border-border',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'border-b border-border',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'bg-muted border border-border px-3 py-2 font-semibold',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-border px-3 py-2',
+        },
+      }),
     ],
     content,
     editable,
@@ -184,6 +207,45 @@ const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) =
 
   // Reset so the same file can be picked again
   e.target.value = '';
+}, [editor]);
+
+// Save product to API
+const saveProduct = useCallback(async () => {
+  if (!editor) return;
+  const title = window.prompt('Product title:');
+  if (!title) return;
+  const defaultSlug = title.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = window.prompt('Product slug:', defaultSlug) || defaultSlug;
+  const html = editor.getHTML();
+
+  const body = {
+    title,
+    slug,
+    description: html,
+  };
+
+  try {
+    const res = await fetch('http://localhost:3001/api/data/product', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const errMsg = json?.error || json?.message || res.statusText || 'Unknown error';
+      if (errMsg.toLowerCase().includes('already using') || errMsg.toLowerCase().includes('500 collections')) {
+        alert('Cannot create collection: quota reached. Create the `product` collection manually or use an existing collection.');
+      } else {
+        alert('Save failed: ' + errMsg);
+      }
+      console.error('Save product error', errMsg, json);
+      return;
+    }
+    alert('Product saved successfully' + (json?.id ? ` (id: ${json.id})` : ''));
+  } catch (err: any) {
+    console.error('Save product exception', err);
+    alert('Save failed: ' + (err?.message || err));
+  }
 }, [editor]);
 
   if (!editor) {
@@ -360,12 +422,69 @@ const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) =
 
           <Separator orientation="vertical" className="h-5 mx-1" />
 
-          {/* ── History ── */}
+          {/* ── Tables ── */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs font-medium text-foreground/80 hover:bg-muted"
+                title="Insert table"
+              >
+                <TableIcon className="w-3.5 h-3.5 mr-1" />
+                Table
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => {
+                editor.commands.insertTable?.({ rows: 3, cols: 3, withHeaderRow: true });
+              }}>
+                Insert Table
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                editor.commands.addRowAfter?.();
+              }}>
+                <Plus className="w-3.5 h-3.5 mr-2" />
+                Add Row Below
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                editor.commands.addColumnAfter?.();
+              }}>
+                <Plus className="w-3.5 h-3.5 mr-2" />
+                Add Column
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                editor.commands.deleteRow?.();
+              }}>
+                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                Delete Row
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                editor.commands.deleteColumn?.();
+              }}>
+                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                Delete Column
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                editor.commands.deleteTable?.();
+              }}>
+                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                Delete Table
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Separator orientation="vertical" className="h-5 mx-1" />
           <TB onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo (Ctrl+Z)">
             <Undo className="w-3.5 h-3.5" />
           </TB>
           <TB onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo (Ctrl+Y)">
             <Redo className="w-3.5 h-3.5" />
+          </TB>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <TB onClick={saveProduct} title="Save product">
+            <Plus className="w-3.5 h-3.5" />
           </TB>
         </div>
       )}

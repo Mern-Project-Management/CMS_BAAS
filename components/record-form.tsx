@@ -42,6 +42,12 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
       if (['name', 'title', 'display_name', 'category'].includes(name) && fields.some(f => f.name === 'slug')) {
         next['slug'] = slugify(String(value));
       }
+
+      // Auto-generate category_slug if category_name is changed
+      if (name === 'category_name' && fields.some(f => f.name === 'category_slug')) {
+        next['category_slug'] = slugify(String(value));
+      }
+
       return next;
     });
   }
@@ -278,6 +284,7 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
       key={formKey} 
       className="space-y-6" 
       onSubmit={handleSubmit}
+      noValidate
       autoComplete="off"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

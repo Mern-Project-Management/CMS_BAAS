@@ -28,6 +28,17 @@ const PAGE_DEFAULTS: Record<string, Array<{ key: string; label: string; order: n
     { key: 'Services3',  label: 'Why Choose Us',       order: 8 },
     { key: 'Cta',        label: 'CTA',                 order: 9 },
   ],
+  'global-presence': [
+    { key: 'HeroInner', label: 'Page Header', order: 1 },
+    { key: 'Contact2',  label: 'Contact Section', order: 2 },
+    { key: 'Team3',     label: 'Our Team', order: 3 },
+    { key: 'Team1',     label: 'Certificates', order: 4 },
+  ],
+  'quality-certification': [
+    { key: 'Process2', label: 'Our Process', order: 1 },
+    { key: 'Features', label: 'Our Mission & Vision', order: 2 },
+    { key: 'Team1',    label: 'Certificates', order: 3 },
+  ],
 };
 
 // ── GET /api/page-components?page=home-02 ─────────────────────────────────

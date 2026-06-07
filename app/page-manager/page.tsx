@@ -49,6 +49,16 @@ const PAGES: Array<{ key: string; label: string; description: string }> = [
     label: 'About Us',
     description: 'About page sections',
   },
+  {
+    key: 'global-presence',
+    label: 'Global Presence',
+    description: 'Global presence page sections',
+  },
+  {
+    key: 'quality-certification',
+    label: 'Quality Certification',
+    description: 'Quality certification page sections',
+  },
   // Future pages — uncomment as you add them:
   // { key: 'products',  label: 'Products',  description: 'Products page sections' },
   // { key: 'services',  label: 'Services',  description: 'Services page sections' },
