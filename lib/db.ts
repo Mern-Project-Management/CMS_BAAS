@@ -466,7 +466,12 @@ export async function populateRelationLabels(records: any[], fields: Field[]) {
   }
 }
 
-export async function getRecords(collectionName: string, limit = 100, filter: Record<string, any> = {}) {
+export async function getRecords(
+  collectionName: string,
+  limit = 100,
+  filter: Record<string, any> = {},
+  projection?: Record<string, 0 | 1>
+) {
   try {
     const db = await getDb();
     const docs = await db.collection(collectionName)

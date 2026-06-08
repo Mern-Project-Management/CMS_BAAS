@@ -43,19 +43,46 @@ export async function GET(
     }
 
     // 2. Extract filters from Query Parameters
-    // Example: ?category_id=123 becomes { category_id: "123" }
     const searchParams = request.nextUrl.searchParams;
     const filters: Record<string, any> = {};
     
     searchParams.forEach((value, key) => {
-      if (key !== 'limit' && key !== 'offset') {
+      if (key !== 'limit' && key !== 'offset' && key !== 'fields') {
         filters[key] = value;
       }
     });
 
+    // Build optional field projection (e.g. ?fields=slug,id limits returned fields — avoids 2MB cache limit)
+    const fieldsParam = searchParams.get('fields');
+    let projection: Record<string, 1> | undefined;
+    if (fieldsParam) {
+      projection = {};
+      for (const f of fieldsParam.split(',').map((s) => s.trim()).filter(Boolean)) {
+        projection[f] = 1;
+      }
+    }
+
     // 3. Fetch data with filters
     const limit = parseInt(searchParams.get('limit') || '100');
-    const { data: records } = await getRecords(collection.name, limit, filters);
+    const { data: records } = await getRecords(collection.name, limit, filters, projection);
+
+    // If filtering by slug, return only the matching record
+    if (filters.slug && records && records.length > 0) {
+      const exactMatch = records.find((r: any) => r.slug === filters.slug);
+      if (exactMatch) {
+        // Populate the single record
+        const db = await getDb();
+        const { data: fields } = await getCollectionFields(collection.id);
+        const [populated] = await populateRelationLabels([exactMatch], fields || []);
+        
+        const fullPopulated = await populateRecord(populated, fields || [], collection.name, db);
+        
+        return NextResponse.json({
+          success: true,
+          data: [fullPopulated], // Return as array for consistency
+        } as ApiResponse<any>, { status: 200 });
+      }
+    }
 
     // 4. Populate relational fields with full objects and labels
     const db = await getDb();
@@ -63,41 +90,7 @@ export async function GET(
     const basePopulated = await populateRelationLabels(records || [], fields || []);
 
     const populatedRecords = await Promise.all((basePopulated || []).map(async (record: any) => {
-      for (const field of (fields || [])) {
-        if (field.field_type === 'Relation' && field.relation_to_collection && record[field.name]) {
-          try {
-            const targetOid = oid(record[field.name]);
-            if (!targetOid) continue;
-
-            const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
-            if (!targetCollectionName) continue;
-
-            const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
-            if (!relatedDoc) continue;
-
-            const populated = normalizeDocId(relatedDoc);
-
-            // Deep population for hierarchy (self-relations)
-            if (targetCollectionName === collection.name && populated[field.name]) {
-              const gpOid = oid(populated[field.name]);
-              if (gpOid) {
-                const gpCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
-                if (gpCollectionName) {
-                  const gpDoc = await db.collection(gpCollectionName).findOne({ _id: gpOid });
-                  if (gpDoc) {
-                    populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
-                  }
-                }
-              }
-            }
-
-            record[`${field.name}_populated`] = populated;
-          } catch (e) {
-            // ignore population errors for individual fields
-          }
-        }
-      }
-      return record;
+      return await populateRecord(record, fields || [], collection.name, db);
     }));
 
     return NextResponse.json({
@@ -122,6 +115,45 @@ export async function GET(
       error: error.message || 'Internal server error',
     }, { status: 500 });
   }
+}
+
+// Helper function to populate a single record
+async function populateRecord(record: any, fields: any[], collectionName: string, db: any) {
+  for (const field of fields) {
+    if (field.field_type === 'Relation' && field.relation_to_collection && record[field.name]) {
+      try {
+        const targetOid = oid(record[field.name]);
+        if (!targetOid) continue;
+
+        const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+        if (!targetCollectionName) continue;
+
+        const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
+        if (!relatedDoc) continue;
+
+        const populated = normalizeDocId(relatedDoc);
+
+        // Deep population for hierarchy (self-relations)
+        if (targetCollectionName === collectionName && populated[field.name]) {
+          const gpOid = oid(populated[field.name]);
+          if (gpOid) {
+            const gpCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
+            if (gpCollectionName) {
+              const gpDoc = await db.collection(gpCollectionName).findOne({ _id: gpOid });
+              if (gpDoc) {
+                populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
+              }
+            }
+          }
+        }
+
+        record[`${field.name}_populated`] = populated;
+      } catch (e) {
+        // ignore population errors for individual fields
+      }
+    }
+  }
+  return record;
 }
 
 export async function POST(
@@ -180,42 +212,11 @@ export async function POST(
 
     // Populate relational data for the response
     const { data: fields } = await getCollectionFields(collection.id);
-    for (const field of (fields || [])) {
-      if (field.field_type === 'Relation' && field.relation_to_collection && normalizedRecord[field.name]) {
-        try {
-          const targetOid = oid(normalizedRecord[field.name]);
-          if (!targetOid) continue;
-
-          const targetCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
-          if (!targetCollectionName) continue;
-
-          const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
-          if (!relatedDoc) continue;
-
-          const populated = normalizeDocId(relatedDoc);
-
-          // Deep population for hierarchy (self-relations)
-          if (targetCollectionName === collection.name && populated[field.name]) {
-            const gpOid = oid(populated[field.name]);
-            if (gpOid) {
-              const gpCollectionName = await resolveRelationCollectionName(field.relation_to_collection);
-              if (gpCollectionName) {
-                const gpDoc = await db.collection(gpCollectionName).findOne({ _id: gpOid });
-                if (gpDoc) {
-                  populated[`${field.name}_populated`] = normalizeDocId(gpDoc);
-                }
-              }
-            }
-          }
-
-          normalizedRecord[`${field.name}_populated`] = populated;
-        } catch (e) {}
-      }
-    }
+    const fullPopulated = await populateRecord(normalizedRecord, fields || [], collection.name, db);
 
     return NextResponse.json({
       success: true,
-      data: normalizedRecord,
+      data: fullPopulated,
     } as ApiResponse<any>, { status: 201 });
 
   } catch (error: any) {

@@ -171,7 +171,7 @@ export function CollectionsList({ collections: initialCollections = [], isLoadin
                 setEditingCollection(collection);
                 setEditDialogOpen(true);
               }}
-              title="Edit collection"
+              title=" "
             >
               <Edit2 className="w-4 h-4" />
             </Button>
