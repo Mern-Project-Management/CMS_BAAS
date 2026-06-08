@@ -219,213 +219,78 @@ export function Sidebar() {
             {isOpen ? 'No collections yet.' : '-'}
           </div>
         ) : (
-<<<<<<< HEAD
-          <nav className="space-y-1">
-            <Link
-              href="/global-presence"
-              className={cn(
-                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-                pathname === '/global-presence'
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-foreground/70',
-              )}
-            >
-              <MapPin className="w-4 h-4 opacity-80" />
-              {isOpen && <span className="truncate text-sm">Global Presence</span>}
-            </Link>
-            <Link
-              href="/page-manager"
-              className={cn(
-                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
-                pathname === '/page-manager'
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-foreground/70',
-              )}
-            >
-              <LayoutDashboard className="w-4 h-4 opacity-80" />
-              {isOpen && <span className="truncate text-sm">Page Manager</span>}
-            </Link>
-            <Link
-              href="/color-manager"
-              className={cn(
-                'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
-                pathname === '/color-manager'
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-foreground/70',
-              )}
-            >
-              <Palette className="w-4 h-4 opacity-80" />
-              {isOpen && <span className="truncate text-sm">Color Manager</span>}
-            </Link>
-=======
-          <div className="space-y-1">
-            {collections.map(renderCollectionItem)}
-          </div>
->>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
+          <>
 
-          // <nav className="space-y-1">
-          //   {isOpen && (
-          //     <p className="px-3 text-[10px] font-bold text-muted-foreground uppercase mb-2 mt-1">
-          //       Website colors
-          //     </p>
-          //   )}
-          //   <Link
-          //     href="/site-theme"
-          //     className={cn(
-          //       'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-          //       pathname === '/site-theme'
-          //         ? 'bg-primary text-primary-foreground font-medium'
-          //         : 'text-foreground/70',
-          //     )}
-          //   >
-          //     <Palette className="w-4 h-4 opacity-80" />
-          //     {isOpen && <span className="truncate text-sm">Site theme</span>}
-          //   </Link>
-          //   <Link
-          //     href="/section-styles"
-          //     className={cn(
-          //       'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
-          //       pathname === '/section-styles'
-          //         ? 'bg-primary text-primary-foreground font-medium'
-          //         : 'text-foreground/70',
-          //     )}
-          //   >
-          //     <Layout className="w-4 h-4 opacity-80" />
-          //     {isOpen && <span className="truncate text-sm">Section styles</span>}
-          //   </Link>
-          //   <Link
-          //     href="/global-presence"
-          //     className={cn(
-          //       'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-          //       pathname === '/global-presence'
-          //         ? 'bg-primary text-primary-foreground font-medium'
-          //         : 'text-foreground/70',
-          //     )}
-          //   >
-          //     <MapPin className="w-4 h-4 opacity-80" />
-          //     {isOpen && <span className="truncate text-sm">Global Presence</span>}
-          //   </Link>
-          //   <Link
-          //     href="/page-manager"
-          //     className={cn(
-          //       'flex items-center rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2 mb-3',
-          //       pathname === '/page-manager'
-          //         ? 'bg-primary text-primary-foreground font-medium'
-          //         : 'text-foreground/70',
-          //     )}
-          //   >
-          //     <LayoutDashboard className="w-4 h-4 opacity-80" />
-          //     {isOpen && <span className="truncate text-sm">Page Manager</span>}
-          //   </Link>
+            <div className="space-y-1">
+              {collections.filter(c => !(c as any).folder_id).map(renderCollectionItem)}
+            </div>
 
-<<<<<<< HEAD
-              return (
-                <div
-                  key={folder.id}
-                  className={cn(
-                    "mb-1 transition-all rounded-lg",
-                    isTarget && "bg-primary/10 ring-2 ring-primary/30"
-                  )}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (draggedCollectionId) setDropTargetId(folder.id);
-                  }}
-                  onDragLeave={() => setDropTargetId(null)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (draggedCollectionId) handleMoveCollection(draggedCollectionId, folder.id);
-                  }}
+            {/* Render Folders */}
+            {folders.map((folder) => {
+            const isExpanded = !!expandedItems[folder.id];
+            const isTarget = dropTargetId === folder.id;
+            const folderCollections = collections.filter(c => (c as any).folder_id === folder.id);
+
+            return (
+              <div
+                key={folder.id}
+                className={cn(
+                  "mb-1 transition-all rounded-lg",
+                  isTarget && "bg-primary/10 ring-2 ring-primary/30"
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggedCollectionId) setDropTargetId(folder.id);
+                }}
+                onDragLeave={() => setDropTargetId(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedCollectionId) handleMoveCollection(draggedCollectionId, folder.id);
+                }}
+              >
+                <div 
+                  className="flex items-center justify-between px-3 py-2 hover:bg-accent rounded-lg cursor-pointer group"
+                  onClick={() => toggleExpand(folder.id)}
                 >
-                  <div 
-                    className="flex items-center justify-between px-3 py-2 hover:bg-accent rounded-lg cursor-pointer group"
-                    onClick={() => toggleExpand(folder.id)}
-                  >
-                    <span className="flex items-center gap-2 text-foreground/80 font-semibold text-xs uppercase tracking-wider">
-                      {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                      <Folder className="w-3.5 h-3.5 fill-current opacity-60" />
-                      {isOpen && <span>{folder.name}</span>}
-                    </span>
-                    {isOpen && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFolderToDelete(folder.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive hover:text-destructive-foreground rounded transition-all"
-                        title="Delete folder"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                  {isExpanded && isOpen && (
-                    <div className="ml-4 space-y-1 mt-1 border-l border-border/60 pl-2">
-                      {folderCollections.map(renderCollectionItem)}
-                    </div>
+                  <span className="flex items-center gap-2 text-foreground/80 font-semibold text-xs uppercase tracking-wider">
+                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    <Folder className="w-3.5 h-3.5 fill-current opacity-60" />
+                    {isOpen && <span>{folder.name}</span>}
+                  </span>
+                  {isOpen && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFolderToDelete(folder.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive hover:text-destructive-foreground rounded transition-all"
+                      title="Delete folder"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
-              );
-            })}
-=======
-          //   {/* Render Folders */}
-          //   {folders.map((folder) => {
-          //     const isExpanded = !!expandedItems[folder.id];
-          //     const isTarget = dropTargetId === folder.id;
-          //     const folderCollections = collections.filter(c => (c as any).folder_id === folder.id);
->>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
-
-          //     return (
-          //       <div
-          //         key={folder.id}
-          //         className={cn(
-          //           "mb-1 transition-all rounded-lg",
-          //           isTarget && "bg-primary/10 ring-2 ring-primary/30"
-          //         )}
-          //         onDragOver={(e) => {
-          //           e.preventDefault();
-          //           if (draggedCollectionId) setDropTargetId(folder.id);
-          //         }}
-          //         onDragLeave={() => setDropTargetId(null)}
-          //         onDrop={(e) => {
-          //           e.preventDefault();
-          //           if (draggedCollectionId) handleMoveCollection(draggedCollectionId, folder.id);
-          //         }}
-          //       >
-          //         <div 
-          //           className="flex items-center justify-between px-3 py-2 hover:bg-accent rounded-lg cursor-pointer group"
-          //           onClick={() => toggleExpand(folder.id)}
-          //         >
-          //           <span className="flex items-center gap-2 text-foreground/80 font-semibold text-xs uppercase tracking-wider">
-          //             {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          //             <Folder className="w-3.5 h-3.5 fill-current opacity-60" />
-          //             {isOpen && <span>{folder.name}</span>}
-          //           </span>
-          //         </div>
-          //         {isExpanded && isOpen && (
-          //           <div className="ml-4 space-y-1 mt-1 border-l border-border/60 pl-2">
-          //             {folderCollections.map(renderCollectionItem)}
-          //           </div>
-          //         )}
-          //       </div>
-          //     );
-          //   })}
-
-          //   {/* Render Root Collections (Uncategorized) */}
-          //   <div 
-          //     className={cn("mt-4 pt-4 border-t border-border/40", dropTargetId === 'root' && "bg-primary/5")}
-          //     onDragOver={(e) => {
-          //       e.preventDefault();
-          //       setDropTargetId('root');
-          //     }}
-          //     onDrop={(e) => {
-          //       e.preventDefault();
-          //       if (draggedCollectionId) handleMoveCollection(draggedCollectionId, null);
-          //     }}
-          //   >
-          //     {isOpen && <p className="px-3 text-[10px] font-bold text-muted-foreground uppercase mb-2">Uncategorized</p>}
-          //     {collections.filter(c => !(c as any).folder_id).map(renderCollectionItem)}
-          //   </div>
-          // </nav>
+                {isExpanded && isOpen && (
+                  <div className="ml-4 space-y-1 mt-1 border-l border-border/60 pl-2">
+                    {folderCollections.map(renderCollectionItem)}
+                    {folder.name.toLowerCase() === 'global presence' && (
+                      <Link
+                        href="/global-presence"
+                        className={cn(
+                          'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+                          pathname === '/global-presence' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+                        )}
+                      >
+                        <MapPin className="w-4 h-4 opacity-60" />
+                        <span className="truncate text-sm">Global Presence</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          </>
         )}
       </div>
 

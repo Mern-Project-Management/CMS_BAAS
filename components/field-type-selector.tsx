@@ -20,7 +20,7 @@ interface FieldTypeSelectorProps {
 }
 
 const FIELD_GROUPS: Record<string, FieldType[]> = {
-  'Basic': ['Text', 'Textarea', 'Number', 'Boolean', 'Color'],
+  'Basic': ['Text', 'Textarea', 'Number', 'Boolean', 'Color', 'Dropdown'],
   'Date & Time': ['Date', 'DateTime'],
   'Media': ['File', 'Image', 'ImageArray'],
   'Advanced': ['JSON', 'Relation', 'Array', 'Editor'],

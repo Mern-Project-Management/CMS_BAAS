@@ -471,7 +471,7 @@ export async function getRecords(collectionName: string, limit = 100, filter: Re
     const db = await getDb();
     const docs = await db.collection(collectionName)
       .find(filter)
-      .sort({ created_at: -1 })
+      .sort({ created_at: 1 })
       .limit(limit)
       .toArray();
     const data = docs.map((d) => normalizeDocId(d as any));

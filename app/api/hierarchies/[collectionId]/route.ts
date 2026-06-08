@@ -37,23 +37,26 @@ async function buildTree(
   // Define query for the current level.
   // For roots (parentId is null), we strictly check if the hierarchy field is explicitly null or does not exist.
   // Records with an empty string as parent are NOT considered roots here, as they might be intended as children of an empty string parent.
-  const query = rootQuery 
-    ? rootQuery 
-    : (parentId === null
-        ? {
-            $or: [
-              { [parentFieldName]: null }, 
-              { [parentFieldName]: '' }, // Treat empty strings as roots for robust fetching
-              { [parentFieldName]: { $exists: false } }
-            ],
-          }
-        : {
-            // Try to cast to ObjectId for the query, fallback to string if invalid
-            $or: [
-            { [parentFieldName]: oid(parentId) },
-            { [parentFieldName]: parentId }
-          ]
-        });
+  let query: any;
+  if (rootQuery) {
+    query = rootQuery;
+  } else if (parentId === null) {
+    query = {
+      $or: [
+        { [parentFieldName]: null },
+        { [parentFieldName]: '' }, // Treat empty strings as roots for robust fetching
+        { [parentFieldName]: { $exists: false } },
+      ],
+    };
+  } else {
+    query = {
+      // Try to cast to ObjectId for the query, fallback to string if invalid
+      $or: [
+        { [parentFieldName]: oid(parentId) },
+        { [parentFieldName]: parentId },
+      ],
+    };
+  }
 
   const records = await collection
     .find(query)
@@ -68,17 +71,6 @@ async function buildTree(
       for (const field of fields) {
         if (field.field_type === 'Relation' && field.relation_to_collection && normalized[field.name]) {
           try {
-<<<<<<< HEAD
-            const val = normalized[field.name];
-            const targetOid = oid(val);
-            if (targetOid || val) {
-              const relatedDoc = await db.collection(field.relation_to_collection).findOne({
-                $or: [{ _id: targetOid }, { _id: val }]
-              });
-              if (relatedDoc) {
-                normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
-              }
-=======
             const targetOid = oid(normalized[field.name]);
             if (!targetOid) continue;
 
@@ -88,7 +80,6 @@ async function buildTree(
             const relatedDoc = await db.collection(targetCollectionName).findOne({ _id: targetOid });
             if (relatedDoc) {
               normalized[`${field.name}_populated`] = normalizeDocId(relatedDoc);
->>>>>>> 3b23d808381ca53f1340efdd996a42bc30e82818
             }
           } catch (e) {
             // Silently skip if related document lookup fails

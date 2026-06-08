@@ -48,6 +48,7 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
     is_encrypted: false,
     validation_rules: [],
     relation_to_collection: '',
+    dropdown_options: [],
   });
   const { toast } = useToast();
 
@@ -56,6 +57,18 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
       fetchCollections();
     }
   }, [open]);
+
+  // Debug: log field_type changes
+  useEffect(() => {
+    console.log('Field type changed to:', formData.field_type);
+  }, [formData.field_type]);
+
+  // Reset dropdown_options when field type changes
+  useEffect(() => {
+    if (formData.field_type !== 'Dropdown') {
+      setFormData(prev => ({ ...prev, dropdown_options: [] }));
+    }
+  }, [formData.field_type]);
 
   async function fetchCollections() {
     try {
@@ -109,6 +122,7 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
         is_encrypted: false,
         validation_rules: [],
         relation_to_collection: '',
+        dropdown_options: [],
       });
       setOpen(false);
 
@@ -135,7 +149,7 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader>     
           <DialogTitle>Create New Field</DialogTitle>
           <DialogDescription>
             Define a new field for your collection
@@ -177,7 +191,10 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
             <Label>Field Type</Label>
             <FieldTypeSelector
               value={formData.field_type as FieldType}
-              onChange={(type) => setFormData({ ...formData, field_type: type })}
+              onChange={(type) => {
+                console.log('Selected type:', type);
+                setFormData({ ...formData, field_type: type });
+              }}
             />
           </div>
 
@@ -201,6 +218,33 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* Debug: show current field type */}
+          <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-xs text-yellow-800">Current field_type: "{typeof formData.field_type === 'string' ? formData.field_type : String(formData.field_type)}"</p>
+            <p className="text-xs text-yellow-800">Is Dropdown: {formData.field_type === 'Dropdown' ? 'YES' : 'NO'}</p>
+          </div>
+
+          {formData.field_type && formData.field_type === 'Dropdown' && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+              <Label>Dropdown Options</Label>
+              <Textarea
+                placeholder="Option 1, Option 2, Option 3"
+                value={Array.isArray(formData.dropdown_options) ? formData.dropdown_options.join(', ') : ''}
+                onChange={(e) => {
+                  const options = e.target.value
+                    .split(',')
+                    .map(opt => opt.trim())
+                    .filter(opt => opt.length > 0);
+                  setFormData({ ...formData, dropdown_options: options });
+                }}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter options separated by commas (e.g., "Option 1, Option 2, Option 3")
+              </p>
             </div>
           )}
 

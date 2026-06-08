@@ -1,5 +1,5 @@
 // Field Types
-export type FieldType = 'Text' | 'Textarea' | 'Number' | 'Boolean' | 'Date' | 'DateTime' | 'File' | 'Image' | 'ImageArray' | 'JSON' | 'Relation' | 'Array' | 'Editor' | 'Color';
+export type FieldType = 'Text' | 'Textarea' | 'Number' | 'Boolean' | 'Date' | 'DateTime' | 'File' | 'Image' | 'ImageArray' | 'JSON' | 'Relation' | 'Array' | 'Editor' | 'Color' | 'Dropdown';
 
 // Field Rules
 export type FieldRule = 'Required' | 'Unique' | 'Encrypted' | 'Validation';
@@ -40,6 +40,7 @@ export interface Field {
   default_value?: string;
   field_order: number;
   relation_to_collection?: string;
+  dropdown_options?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -78,6 +79,7 @@ export interface CreateFieldRequest {
   default_value?: string;
   field_order?: number;
   relation_to_collection?: string;
+  dropdown_options?: string[];
 }
 
 export interface UpdateFieldRequest extends Partial<CreateFieldRequest> {}

@@ -2,8 +2,8 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import nodemailer from 'nodemailer';
 
-const SMTP_USER = process.env.SMTP_USER || "branduntold@gmail.com";
-const SMTP_PASS = process.env.SMTP_PASS || "bapb spqs njpy vikx";
+const SMTP_USER = process.env.SMTP_USER || "harshit.dhodi2108@gmail.com";
+const SMTP_PASS = process.env.SMTP_PASS || "jnkb ytek ilqm ryfm";
 
 // Debug logging (Server-side console)
 if (!SMTP_USER || !SMTP_PASS) {

@@ -13,6 +13,7 @@ import {
   PenTool,
   Palette,
   AlignLeft,
+  Minus,
 } from 'lucide-react';
 
 export const FIELD_TYPES: Record<FieldType, { label: string; description: string }> = {
@@ -30,6 +31,7 @@ export const FIELD_TYPES: Record<FieldType, { label: string; description: string
   Array: { label: 'Array', description: 'Multiple values (list of text items)' },
   Editor: { label: 'Editor', description: 'Rich text editor with formatting' },
   Color: { label: 'Color', description: 'Hex color picker for backgrounds and text' },
+  Dropdown: { label: 'Dropdown', description: 'Select from predefined options' },
 };
 
 export function getFieldTypeIcon(type: FieldType) {
@@ -61,8 +63,10 @@ export function getFieldTypeIcon(type: FieldType) {
       return <PenTool {...iconProps} />;
     case 'Color':
       return <Palette {...iconProps} />;
-      case 'Textarea':
-  return <AlignLeft {...iconProps} />;
+    case 'Textarea':
+      return <AlignLeft {...iconProps} />;
+    case 'Dropdown':
+      return <Minus {...iconProps} />;
     default:
       return <Type {...iconProps} />;
   }
