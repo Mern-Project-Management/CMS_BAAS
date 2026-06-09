@@ -12,6 +12,7 @@ import { ObjectId } from 'mongodb';
 export async function GET(request: NextRequest) {
   try {
     const collectionId = request.nextUrl.searchParams.get('collection_id');
+    console.log('[fields route] collectionId:', collectionId);
 
     if (!collectionId) {
       return NextResponse.json(

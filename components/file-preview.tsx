@@ -72,9 +72,17 @@ export function FilePreview({ url, fieldType, className = '' }: Props) {
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-blue-600 hover:underline truncate max-w-xs"
+          title="Click to view PDF"
         >
           {url.split('/').pop()}
         </a>
+        <button
+          onClick={() => window.open(url, '_blank')}
+          className="ml-1 p-1 hover:bg-muted rounded"
+          title="Open in new tab"
+        >
+          <FileText className="w-4 h-4 text-blue-600" />
+        </button>
       </div>
     );
   }

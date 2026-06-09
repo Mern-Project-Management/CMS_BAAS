@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendContactEmail } from '@/lib/mail';
 import { createRecord } from '@/lib/db'; // Import createRecord
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   // Add CORS headers for all responses
   const response = NextResponse.json({ success: false, error: 'Method not allowed' }, { status: 405 });
   response.headers.set('Access-Control-Allow-Origin', '*');

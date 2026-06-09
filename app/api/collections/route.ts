@@ -18,6 +18,7 @@ export async function GET() {
       );
     }
 
+    console.log('[collections] returning', data?.length || 0, 'collections');
     return NextResponse.json(
       { success: true, data } as ApiResponse<typeof data>,
       { status: 200 }

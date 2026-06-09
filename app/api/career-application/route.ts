@@ -1,6 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendContactEmail } from '@/lib/mail';
-import { createRecord } from '@/lib/db';
+import { createRecord , getRecords  } from '@/lib/db';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
+
+interface CareerApplicationData {
+  name: string;
+  email: string;
+  phone?: string;
+  position: string;
+  coverLetter?: string;
+  cv_url?: string;
+}
+
+// ✅ NEW: GET — fetch applications with optional filters
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const position = searchParams.get('position');
+  const email = searchParams.get('email');
+  const limit = parseInt(searchParams.get('limit') || '50');
+  const offset = parseInt(searchParams.get('offset') || '0');
+
+  try {
+    const filters: Record<string, any> = {};
+    if (position) filters.position = position;
+    if (email) filters.email = email;
+
+    // Call getRecords with correct signature: collectionName, limit, filter, projection
+    const { data, error } = await getRecords('career_applications', limit, filters);
+    console.log("data", data)
+    if (error) {
+      console.error('Failed to fetch career applications:', error);
+      const errorResponse = NextResponse.json(
+        { success: false, error: 'Failed to fetch applications' },
+        { status: 500 }
+      );
+      errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+      return errorResponse;
+    }
+
+    const successResponse = NextResponse.json({
+      success: true,
+      data: data || [],
+      pagination: { limit, offset, total: (data || []).length },
+    });
+    successResponse.headers.set('Access-Control-Allow-Origin', '*');
+    return successResponse;
+
+  } catch (error: any) {
+    console.error('Career Application GET Error:', error);
+    const errorResponse = NextResponse.json(
+      { success: false, error: 'Failed to fetch applications' },
+      { status: 500 }
+    );
+    errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+    return errorResponse;
+  }
+}
+
+
+const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads');
+
+// Ensure upload directory exists
+async function ensureUploadDir() {
+  if (!existsSync(UPLOAD_DIR)) {
+    await mkdir(UPLOAD_DIR, { recursive: true });
+  }
+}
+
+// Upload file locally and return public URL
+async function uploadFileToLocal(file: File): Promise<string> {
+  await ensureUploadDir();
+  const timestamp = Date.now();
+  const randomStr = Math.random().toString(36).substring(2, 15);
+  const ext = file.name.split('.').pop() || '';
+  const filename = `${timestamp}-${randomStr}.${ext}`;
+  const filepath = join(UPLOAD_DIR, filename);
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  await writeFile(filepath, buffer);
+  return `/uploads/${filename}`;
+}
 
 // Career application email template for admin/owner
 const adminHtmlContent = (data: CareerApplicationData) => `
@@ -128,6 +209,7 @@ interface CareerApplicationData {
   phone?: string;
   position: string;
   coverLetter?: string;
+  cv_url?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -146,13 +228,53 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const contentType = request.headers.get('content-type') || '';
+    
     let body: CareerApplicationData;
-    try {
-      body = await request.json();
-    } catch (e) {
-      const errorResponse = NextResponse.json({ success: false, error: 'Invalid request format' }, { status: 400 });
-      errorResponse.headers.set('Access-Control-Allow-Origin', '*');
-      return errorResponse;
+    let cvUrl = '';
+    
+    // Handle multipart form data (for file uploads)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      const name = formData.get('name') as string;
+      const email = formData.get('email') as string;
+      const phone = formData.get('phone') as string;
+      const position = formData.get('position') as string;
+      const coverLetter = formData.get('coverLetter') as string;
+      const cvFile = formData.get('cv_file') as File;
+
+      if (!name || !email || !position) {
+        const errorResponse = NextResponse.json({ success: false, error: 'Name, email, and position are required' }, { status: 400 });
+        errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+        return errorResponse;
+      }
+
+      // Upload CV file if provided
+      if (cvFile && cvFile.size > 0) {
+        try {
+          cvUrl = await uploadFileToLocal(cvFile);
+        } catch (uploadError) {
+          console.error('Failed to upload CV file:', uploadError);
+        }
+      }
+
+      body = {
+        name,
+        email,
+        phone: phone || '',
+        position,
+        coverLetter: coverLetter || '',
+        cv_url: cvUrl,
+      };
+    } else {
+      // Handle JSON body
+      try {
+        body = await request.json();
+      } catch (e) {
+        const errorResponse = NextResponse.json({ success: false, error: 'Invalid request format' }, { status: 400 });
+        errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+        return errorResponse;
+      }
     }
 
     // Validate required fields
@@ -171,6 +293,7 @@ export async function POST(request: NextRequest) {
       phone: body.phone || '',
       position,
       coverLetter: body.coverLetter || '',
+      cv_url: body.cv_url || '',
       applied_at: new Date().toISOString(),
     });
     

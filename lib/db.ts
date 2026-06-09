@@ -3,7 +3,7 @@ import { mongoClientPromise } from '@/lib/mongodb';
 import type { Collection, CollectionWithFields, Field, User, UserRole } from '@/lib/types';
 import crypto from 'crypto';
 
-const dbName = process.env.MONGODB_DB || 'jayshree_blogs';
+const dbName = process.env.MONGODB_DB || 'CMS';
 
 function nowIso() {
   return new Date().toISOString();
@@ -219,7 +219,9 @@ export async function getCollectionFields(collectionId: string) {
     const db = await getDb();
     const fieldsCol = db.collection<Omit<Field, 'id'> & { _id: ObjectId }>('fields');
 
+    console.log('[getCollectionFields] collectionId:', collectionId);
     const docs = await fieldsCol.find({ collection_id: collectionId }).sort({ field_order: 1 }).toArray();
+    console.log('[getCollectionFields] found', docs.length, 'fields');
     const data: Field[] = docs.map((d) => normalizeDocId(d) as unknown as Field);
     return { data, error: null as null };
   } catch (error) {
@@ -476,7 +478,7 @@ export async function getRecords(
     const db = await getDb();
     const docs = await db.collection(collectionName)
       .find(filter)
-      .sort({ created_at: 1 })
+      .sort({ created_at: -1 })
       .limit(limit)
       .toArray();
     const data = docs.map((d) => normalizeDocId(d as any));
