@@ -73,14 +73,12 @@ const result = await getRecords('contact_leads', safeLimit, {}, undefined);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, message } = body;
+    const { name, email, message, url } = body;
     const service_id = body.service_id || body.service;
 
-    if (!name || !email || !service_id || !message) {
-      return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
-    }
+    // Validation logic removed as requested
 
-    const { error: dbError } = await createRecord('contact_leads', { name, email, service_id, message });
+    const { error: dbError } = await createRecord('contact_leads', { name, email, service_id, message, url });
     if (dbError) console.error('Failed to save contact form data:', dbError);
 
     await sendContactEmail({ name, email, service_id, message });

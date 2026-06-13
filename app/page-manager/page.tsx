@@ -41,32 +41,19 @@ interface PageComponent {
   padding_bottom?: string;
 }
 
-// Pages registry — add new pages here as you build them
 const PAGES: Array<{ key: string; label: string; description: string }> = [
-  {
-    key: 'home-02',
-    label: 'Home Page',
-    description: 'Main landing page components',
-  },
-  {
-    key: 'about-us',
-    label: 'About Us',
-    description: 'About page sections',
-  },
-  {
-    key: 'global-presence',
-    label: 'Global Presence',
-    description: 'Global presence page sections',
-  },
-  {
-    key: 'quality-certification',
-    label: 'Quality Certification',
-    description: 'Quality certification page sections',
-  },
-  // Future pages — uncomment as you add them:
-  // { key: 'products',  label: 'Products',  description: 'Products page sections' },
-  // { key: 'services',  label: 'Services',  description: 'Services page sections' },
-  // { key: 'contact',   label: 'Contact',   description: 'Contact page sections' },
+  { key: 'home-02', label: 'Home Page', description: 'Main landing page components' },
+  { key: 'about-us', label: 'About Us', description: 'About page sections' },
+  { key: 'blogs', label: 'Blogs', description: 'Blogs page sections' },
+  { key: 'careers', label: 'Careers', description: 'Careers page sections' },
+  { key: 'contact', label: 'Contact', description: 'Contact page sections' },
+  { key: 'global-presence', label: 'Global Presence', description: 'Global presence page sections' },
+  { key: 'industry-solutions', label: 'Industry Solutions', description: 'Industry solutions page sections' },
+  { key: 'manufacturing-infrastructure', label: 'Manufacturing Infrastructure', description: 'Manufacturing infrastructure page sections' },
+  { key: 'products', label: 'Products', description: 'Products page sections' },
+  { key: 'quality-certification', label: 'Quality Certification', description: 'Quality certification page sections' },
+  { key: 'services', label: 'Services', description: 'Services page sections' },
+  { key: 'terms-and-conditions', label: 'Terms and Conditions', description: 'Terms and conditions page sections' },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -305,9 +292,9 @@ export default function PageManagerPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:items-start">
         {/* Left: Page selector */}
-        <div className="lg:col-span-1 space-y-2">
+        <div className="lg:col-span-1 space-y-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] overflow-y-auto pr-1 pb-4 custom-scrollbar">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mb-3">
             Pages
           </p>

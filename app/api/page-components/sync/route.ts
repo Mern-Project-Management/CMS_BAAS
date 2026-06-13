@@ -17,15 +17,69 @@ const LABEL_CORRECTIONS: Record<string, Record<string, string>> = {
     Testimonials4:      'cta',
   },
   'about-us': {
-    HeroInner:  'Page Header',
     About9:     'Company Overview',
     Features:   'Our Mission & Vision',
     Process:    'Our History',
     Team2:      'Leadership Team',
     Services4:  'Infrastructure',
-    Team1:      'cirtificate',
+    Team1:      'Certificates',
     Services3:  'Why Choose Us',
     Cta:        'CTA',
+  },
+  'blogs': {
+    BlogsGridISR: 'Blogs Grid',
+  },
+  'careers': {
+    Careers1: 'Careers List',
+    Cta:      'CTA',
+  },
+  'contact': {
+    ContactTop: 'Contact Top',
+    Contact3:   'Contact Form',
+    Cta:        'CTA',
+  },
+  'faq': {
+    Faq2: 'FAQ Accordion 1',
+    Faq3: 'FAQ Accordion 2',
+    Cta:  'CTA',
+  },
+  'global-presence': {
+    Contact2:  'Contact Section',
+    Team3:     'Our Team',
+    Team1:     'Certificates',
+  },
+  'industry-solutions': {
+    Services10:   'Our Solutions',
+    Portfolios10: 'Latest Projects',
+  },
+  'manufacturing-infrastructure': {
+    Portfolios4:          'Machinery & Equipment',
+    ManufacturingProcess: 'Manufacturing Process',
+    Services5:            'Quality Control Process',
+    About6:               'Production Capacity',
+    Portfolios1:          'Factory Images',
+    Services8:            'Safety Standards',
+  },
+  'products': {
+    PortfoliosPrimary: 'Products Grid',
+    Cta:               'CTA',
+  },
+  'quality-certification': {
+    Features: 'Our Mission & Vision',
+    Process2: 'Our Process',
+    Team1:    'Certificates',
+  },
+  'services': {
+    ServicesPrimary: 'Services Grid',
+    Cta:             'CTA',
+  },
+  'team': {
+    Team1: 'Team Grid',
+    Cta:   'CTA',
+  },
+  'terms-and-conditions': {
+    TermsAndConditionsPrimary: 'Terms and Conditions Text',
+    Cta:                       'CTA',
   },
 };
 

@@ -17,7 +17,7 @@ interface FieldRulesPanelProps {
 
 export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
   const [validationRules, setValidationRules] = useState<ValidationRule[]>(
-    (field.validation_rules as ValidationRule[]) || []
+    Array.isArray(field.validation_rules) ? (field.validation_rules as ValidationRule[]) : []
   );
   const [newRule, setNewRule] = useState<ValidationRule>({ type: 'min' });
 
@@ -110,7 +110,7 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
 
           <TabsContent value="validation" className="space-y-4">
             <div className="space-y-3">
-              {validationRules.map((rule, index) => (
+              {Array.isArray(validationRules) && validationRules.map((rule, index) => (
                 <div key={index} className="flex items-end gap-2">
                   <div className="flex-1 space-y-1">
                     <Label className="text-xs">{rule.type}</Label>

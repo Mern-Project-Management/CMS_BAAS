@@ -36,19 +36,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique filename
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 15);
-    const ext = file.name.split('.').pop() || '';
-    const filename = `${timestamp}-${randomStr}.${ext}`;
-
-    const bytes = await file.arrayBuffer();
+    const filename = generateFilename(file);
 
     // Save file locally to public/uploads
-    await ensureUploadDir();
-    const filepath = join(UPLOAD_DIR, filename);
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
-    const publicUrl = `/uploads/${filename}`;
+    const publicUrl = await saveFileToLocal(file, filename);
+
 
     return NextResponse.json(
       {
