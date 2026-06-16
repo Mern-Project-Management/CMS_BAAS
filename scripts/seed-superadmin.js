@@ -5,7 +5,7 @@
  *   MONGODB_URI="..." MONGODB_DB="jayshree_blogs" npm run seed:superadmin
  */
 
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 const { MongoClient, ObjectId } = require('mongodb');
 const crypto = require('crypto');
 

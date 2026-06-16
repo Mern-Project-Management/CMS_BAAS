@@ -5,7 +5,7 @@
  *   MONGODB_URI="..." MONGODB_DB="jayshree_blogs" npm run seed:default-user
  */
 
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 const { MongoClient, ObjectId } = require('mongodb');
 
 const uri = process.env.MONGODB_URI;
