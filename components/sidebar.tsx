@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Loader2, Plus, Database, ChevronRight, ChevronDown, FileText, Folder, FolderPlus, MoreVertical, Trash2, Palette, Layout, MapPin, LayoutDashboard, File } from 'lucide-react';
+import { Loader2, Plus, Database, ChevronRight, ChevronDown, FileText, Folder, FolderPlus, MoreVertical, Trash2, Palette, Layout, MapPin, LayoutDashboard, File, Settings, Mail, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-client';
 import { useSidebar } from '@/components/context/sidebar-context';
 import type { Collection } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { IconRenderer } from '@/components/icon-renderer';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export function Sidebar() {
   const [loading, setLoading] = useState(true);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [draggedCollectionId, setDraggedCollectionId] = useState<string | null>(null);
+  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   // State for creating a new folder
@@ -74,6 +76,15 @@ export function Sidebar() {
       }
     };
     fetchData();
+
+    const handleRefresh = () => {
+      fetchData();
+    };
+
+    window.addEventListener('sidebar:refresh', handleRefresh);
+    return () => {
+      window.removeEventListener('sidebar:refresh', handleRefresh);
+    };
   }, []);
 
   const toggleExpand = (id: string) => {
@@ -147,6 +158,36 @@ export function Sidebar() {
     }
   };
 
+  const handleReorderFolders = async (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+    
+    const draggedIndex = folders.findIndex(f => f.id === draggedId);
+    const targetIndex = folders.findIndex(f => f.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const newFolders = [...folders];
+    const [draggedItem] = newFolders.splice(draggedIndex, 1);
+    newFolders.splice(targetIndex, 0, draggedItem);
+    
+    setFolders(newFolders);
+    
+    try {
+      const items = newFolders.map((f, i) => ({ id: f.id, order: i }));
+      const res = await fetch('/api/sidebar-folders/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      });
+      if (!res.ok) throw new Error('Failed to reorder');
+    } catch (err) {
+      toast({ title: 'Error', description: 'Could not reorder folders', variant: 'destructive' });
+    } finally {
+      setDraggedFolderId(null);
+      setDropTargetId(null);
+    }
+  };
+
   if (pathname.startsWith('/login')) return null;
 
   // Helper to render a collection item
@@ -166,7 +207,7 @@ export function Sidebar() {
             isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
           )}
         >
-          {c.icon || <FileText className="w-4 h-4 opacity-60" />}
+          {c.icon ? <IconRenderer icon={c.icon} className="w-5 h-5 flex-shrink-0" /> : <FileText className="w-4 h-4 opacity-60 flex-shrink-0" />}
           {isOpen && <span className="truncate text-sm">{c.display_name}</span>}
         </Link>
       </div>
@@ -235,18 +276,32 @@ export function Sidebar() {
                 return (
                   <div
                     key={folder.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      setDraggedFolderId(folder.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedFolderId(null);
+                      setDropTargetId(null);
+                    }}
                     className={cn(
-                      "mb-1 transition-all rounded-lg",
-                      isTarget && "bg-primary/10 ring-2 ring-primary/30"
+                      "mb-1 transition-all rounded-lg border border-transparent",
+                      isTarget && draggedCollectionId && "bg-primary/10 ring-2 ring-primary/30",
+                      isTarget && draggedFolderId && "border-t-primary border-t-2"
                     )}
                     onDragOver={(e) => {
                       e.preventDefault();
-                      if (draggedCollectionId) setDropTargetId(folder.id);
+                      if (draggedCollectionId || draggedFolderId) setDropTargetId(folder.id);
                     }}
                     onDragLeave={() => setDropTargetId(null)}
                     onDrop={(e) => {
                       e.preventDefault();
-                      if (draggedCollectionId) handleMoveCollection(draggedCollectionId, folder.id);
+                      if (draggedCollectionId) {
+                        handleMoveCollection(draggedCollectionId, folder.id);
+                      } else if (draggedFolderId) {
+                        handleReorderFolders(draggedFolderId, folder.id);
+                      }
                     }}
                   >
                     <div
@@ -316,6 +371,43 @@ export function Sidebar() {
               <File className="w-4 h-4 opacity-60" />
               {isOpen && <span className="truncate text-sm">Page Manager</span>}
             </Link> 
+
+            {/* Email & Settings Section */}
+            <div className="pt-2 pb-1">
+              <p className="px-3 text-xs font-semibold text-foreground/50 uppercase tracking-wider">
+                {isOpen ? 'Configuration' : 'Cfg'}
+              </p>
+            </div>
+            <Link
+              href="/email-templates"
+              className={cn(
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+                pathname === '/email-templates' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+              )}
+            >
+              <Mail className="w-4 h-4 opacity-60" />
+              {isOpen && <span className="truncate text-sm">Email Templates</span>}
+            </Link>
+            <Link
+              href="/send-email"
+              className={cn(
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+                pathname === '/send-email' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+              )}
+            >
+              <Send className="w-4 h-4 opacity-60" />
+              {isOpen && <span className="truncate text-sm">Send Email</span>}
+            </Link>
+            <Link
+              href="/settings"
+              className={cn(
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
+                pathname === '/settings' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+              )}
+            >
+              <Settings className="w-4 h-4 opacity-60" />
+              {isOpen && <span className="truncate text-sm">Global Settings</span>}
+            </Link>
           </div>
         </div>
 

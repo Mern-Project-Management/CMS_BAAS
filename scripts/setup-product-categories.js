@@ -13,7 +13,7 @@ const http = require('http');
 const https = require('https');
 
 // Configuration
-const API_BASE = process.env.API_URL || 'https://branduntold.in';
+const API_BASE = process.env.API_URL || 'https://admin.wiretex.rndtd.com';
 const AUTH_TOKEN = process.env.AUTH_TOKEN || 'your-token-here';
 
 const COLLECTION_NAME = 'product_categories';

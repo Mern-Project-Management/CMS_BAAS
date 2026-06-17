@@ -9,13 +9,16 @@ import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
 import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Highlight } from '@tiptap/extension-highlight';
 
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, ImagePlus,
   List, ListOrdered, Quote, Code, Minus,
   Link as LinkIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Undo, Redo, Pilcrow,
-  Table as TableIcon, Plus, Trash2,
+  Table as TableIcon, Plus, Trash2, Palette, Highlighter,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -83,6 +86,11 @@ export function TipTapEditor({
         horizontalRule: {
           HTMLAttributes: { class: 'border-border my-6' },
         },
+      }),
+      TextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true,
       }),
       Underline,
       Typography, // smart quotes, em-dashes, ellipsis, etc.
@@ -352,6 +360,30 @@ const saveProduct = useCallback(async () => {
           <TB onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Inline code">
             <Code className="w-3.5 h-3.5" />
           </TB>
+
+          <Separator orientation="vertical" className="h-5 mx-1" />
+
+          {/* ── Colors ── */}
+          <div className="flex items-center gap-1">
+            <div className="relative flex items-center justify-center w-7 h-7 rounded hover:bg-muted transition-colors overflow-hidden" title="Text Color">
+              <Palette className="w-3.5 h-3.5 text-foreground/70 pointer-events-none" style={{ color: editor.getAttributes('textStyle').color }} />
+              <input
+                type="color"
+                onInput={(e) => editor.chain().focus().setColor((e.target as HTMLInputElement).value).run()}
+                value={editor.getAttributes('textStyle').color || '#000000'}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+            <div className="relative flex items-center justify-center w-7 h-7 rounded hover:bg-muted transition-colors overflow-hidden" title="Highlight Color">
+              <Highlighter className="w-3.5 h-3.5 text-foreground/70 pointer-events-none" style={{ color: editor.getAttributes('highlight').color }} />
+              <input
+                type="color"
+                onInput={(e) => editor.chain().focus().setHighlight({ color: (e.target as HTMLInputElement).value }).run()}
+                value={editor.getAttributes('highlight').color || '#ffff00'}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+          </div>
 
           <Separator orientation="vertical" className="h-5 mx-1" />
 

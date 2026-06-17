@@ -13,6 +13,7 @@ import { FieldsList } from '@/components/fields-list';
 import { SchemaPreview } from '@/components/schema-preview';
 import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { RecordForm } from '@/components/record-form';
+import { IconRenderer } from '@/components/icon-renderer';
 import { RecordsTable } from '@/components/records-table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-client';
@@ -269,9 +270,9 @@ export default function CollectionDetailPage() {
               </Link>
               {collection ? (
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    {collection.icon && <span className="mr-2">{collection.icon}</span>}
-                    {collection.display_name}
+                  <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    {collection.icon && <IconRenderer icon={collection.icon} className="w-8 h-8 flex-shrink-0" />}
+                    <span>{collection.display_name}</span>
                   </h1>
                   {collection.description && (
                     <p className="text-muted-foreground mt-1">
@@ -305,6 +306,7 @@ export default function CollectionDetailPage() {
             onOpenChange={setEditCollectionDialogOpen}
             onSuccess={(updated) => {
               setCollection(updated);
+              window.dispatchEvent(new Event('sidebar:refresh'));
             }}
           />
         )}

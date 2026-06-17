@@ -19,7 +19,7 @@ async function getDb() {
 export async function GET() {
   try {
     const db = await getDb();
-    const folders = await db.collection('sidebar_folders').find().sort({ created_at: 1 }).toArray();
+    const folders = await db.collection('sidebar_folders').find().sort({ order: 1, created_at: 1 }).toArray();
     
     // Map _id to id for frontend compatibility
     const data = folders.map(f => ({ ...f, id: f._id.toString(), _id: undefined }));
@@ -41,8 +41,14 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDb();
+    
+    // Get max order
+    const lastFolder = await db.collection('sidebar_folders').find().sort({ order: -1 }).limit(1).toArray();
+    const newOrder = lastFolder.length > 0 && typeof lastFolder[0].order === 'number' ? lastFolder[0].order + 1 : 0;
+
     const result = await db.collection('sidebar_folders').insertOne({
       name: body.name,
+      order: newOrder,
       created_at: new Date()
     });
 
