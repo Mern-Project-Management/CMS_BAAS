@@ -6,18 +6,15 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreateFieldDialog } from '@/components/create-field-dialog';
-import { EditFieldDialog } from '@/components/edit-field-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditCollectionDialog } from '@/components/edit-collection-dialog';
-import { FieldsList } from '@/components/fields-list';
-import { SchemaPreview } from '@/components/schema-preview';
 import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { RecordForm } from '@/components/record-form';
 import { IconRenderer } from '@/components/icon-renderer';
 import { RecordsTable } from '@/components/records-table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-client';
-import { ChevronLeft, Edit2, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, Edit2, Calendar, Clock, Plus, Settings } from 'lucide-react';
 import type { Collection, Field } from '@/lib/types';
 
 // ── Event status helpers ──────────────────────────────────────────────────────
@@ -69,9 +66,8 @@ export default function CollectionDetailPage() {
   const [fieldRefresh, setFieldRefresh] = useState(0);
   const [records, setRecords] = useState<Array<{ id: string; [key: string]: any }>>([]);
   const [recordRefresh, setRecordRefresh] = useState(0);
-  const [editingField, setEditingField] = useState<Field | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editCollectionDialogOpen, setEditCollectionDialogOpen] = useState(false);
+  const [isRecordFormOpen, setIsRecordFormOpen] = useState(false);
 
   // Events status filter (only active when collection name is 'events')
   const isEventsCollection = resolvedId === 'events' || collection?.name === 'events';
@@ -286,17 +282,27 @@ export default function CollectionDetailPage() {
                 </div>
               )}
             </div>
-            {isSuperadmin && collection && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditCollectionDialogOpen(true)}
-                className="gap-2"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit Collection
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {isSuperadmin && collection && (
+                <Link href={`/collections/${collectionId}/fields?collectionName=${collectionName}`}>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings className="w-4 h-4" />
+                    Manage Fields
+                  </Button>
+                </Link>
+              )}
+              {isSuperadmin && collection && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditCollectionDialogOpen(true)}
+                  className="gap-2"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Collection
+                </Button>
+              )}
+            </div>
           </div>
         </div>
         {collection && (
@@ -319,70 +325,38 @@ export default function CollectionDetailPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Fields Section - Only for Superadmin */}
-            {isSuperadmin && (
-              <>
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-2xl font-semibold">Fields</h2>
-                      <p className="text-sm text-muted-foreground">
-                        Define the structure of your {collection?.display_name} data
-                      </p>
-                    </div>
-                    <CreateFieldDialog
-                      collectionId={collectionId}
-                      onSuccess={() => setFieldRefresh((prev) => prev + 1)}
-                    />
-                  </div>
-
-                  <Card>
-                    <CardContent className="pt-6">
-                      <FieldsList
-                        fields={fields}
-                        onDelete={() => setFieldRefresh((prev) => prev + 1)}
-                        onEdit={(field) => {
-                          setEditingField(field);
-                          setEditDialogOpen(true);
-                        }}
-                        onReorder={() => setFieldRefresh((prev) => prev + 1)}
-                      />
-                    </CardContent>
-                  </Card>
-                  <EditFieldDialog
-                    field={editingField}
-                    open={editDialogOpen}
-                    onOpenChange={(open) => {
-                      setEditDialogOpen(open);
-                      if (!open) setEditingField(null);
-                    }}
-                    onSuccess={() => {
-                      setFieldRefresh((prev) => prev + 1);
-                      setEditDialogOpen(false);
-                      setEditingField(null);
-                    }}
-                  />
-                </div>
-
-             
-              </>
-            )}
-
             {/* Records Form & Table */}
             {collection && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Data</CardTitle>
-                  <CardDescription>
-                    Create and view records for this collection
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle>Data</CardTitle>
+                    <CardDescription>
+                      View and manage records for this collection
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setIsRecordFormOpen(true)} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add New Record
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <RecordForm
-                    collectionId={collectionId}
-                    fields={fields}
-                    onCreated={() => setRecordRefresh((p) => p + 1)}
-                  />
+                  
+                  <Dialog open={isRecordFormOpen} onOpenChange={setIsRecordFormOpen}>
+                    <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Record</DialogTitle>
+                      </DialogHeader>
+                      <RecordForm
+                        collectionId={collectionId}
+                        fields={fields}
+                        onCreated={() => {
+                          setRecordRefresh((p) => p + 1);
+                          setIsRecordFormOpen(false);
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
 
                   {/* ── Events status filter tabs ── */}
                   {isEventsCollection && enrichedRecords.length > 0 && (
@@ -435,6 +409,7 @@ export default function CollectionDetailPage() {
                           title="Root Records"
                           records={hierarchicalRecords.filter(r => r._depth === 0)}
                           hiddenFieldNames={[parentFieldName]}
+                          hiddenFields={collection.hidden_fields || []}
                           onDelete={() => setRecordRefresh((p) => p + 1)}
                           onUpdate={() => setRecordRefresh((p) => p + 1)}
                         />
@@ -450,6 +425,7 @@ export default function CollectionDetailPage() {
                           fields={fields}
                           title="Child Records"
                           records={hierarchicalRecords.filter(r => r._depth === 1)}
+                          hiddenFields={collection.hidden_fields || []}
                           onDelete={() => setRecordRefresh((p) => p + 1)}
                           onUpdate={() => setRecordRefresh((p) => p + 1)}
                         />
@@ -465,6 +441,7 @@ export default function CollectionDetailPage() {
                           fields={fields}
                           title="Deeply Nested Records"
                           records={hierarchicalRecords.filter(r => r._depth > 1)}
+                          hiddenFields={collection.hidden_fields || []}
                           onDelete={() => setRecordRefresh((p) => p + 1)}
                           onUpdate={() => setRecordRefresh((p) => p + 1)}
                         />
@@ -475,6 +452,7 @@ export default function CollectionDetailPage() {
                       collectionId={collectionId}
                       fields={fields}
                       records={isEventsCollection ? eventFilteredRecords : records}
+                      hiddenFields={collection.hidden_fields || []}
                       onDelete={() => setRecordRefresh((p) => p + 1)}
                       onUpdate={() => setRecordRefresh((p) => p + 1)}
                       statusRenderer={isEventsCollection

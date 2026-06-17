@@ -53,6 +53,17 @@ const defaultColors = {
     4: '#ffffff33',
     5: '#1e8a8a26',
   },
+  admin: {
+    background: '#ffffff',
+    foreground: '#09090b',
+    card: '#ffffff',
+    cardForeground: '#09090b',
+    primary: '#1e8a8a',
+    primaryForeground: '#ffffff',
+    border: '#e4e4e7',
+    sidebarBackground: '#ffffff',
+    sidebarForeground: '#0f172a',
+  },
 };
 
 // ── CSS Variable Mappings ──────────────────────────────────────────────────
@@ -92,6 +103,11 @@ const colorCategories = {
   common: ['white', 'black'],
   heading: ['primary'],
   grey: ['1', '2', '3'],
+  admin: [
+    'background', 'foreground', 'card', 'cardForeground', 
+    'primary', 'primaryForeground', 'border', 
+    'sidebarBackground', 'sidebarForeground'
+  ],
 };
 
 const categoryLabels: Record<string, string> = {
@@ -101,6 +117,7 @@ const categoryLabels: Record<string, string> = {
   common: 'Common Colors',
   heading: 'Heading Colors',
   grey: 'Grey Colors',
+  admin: 'Admin Theme',
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -116,6 +133,18 @@ export default function ColorManagerPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [dirty, setDirty] = useState(false);
 
+  // ── Helper to merge saved colors with defaults ────────────────────────
+  const mergeColors = (saved: any) => {
+    const merged = JSON.parse(JSON.stringify(defaultColors));
+    if (!saved) return merged;
+    for (const category in saved) {
+      if (merged[category]) {
+        merged[category] = { ...merged[category], ...saved[category] };
+      }
+    }
+    return merged;
+  };
+
   // ── Load saved colors from API on mount ────────────────────────────────
   useEffect(() => {
     const loadColors = async () => {
@@ -124,9 +153,10 @@ export default function ColorManagerPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data?.colors) {
-            setColors(data.data.colors);
-            setSavedColors(data.data.colors);
-            applyColors(data.data.colors);
+            const merged = mergeColors(data.data.colors);
+            setColors(merged);
+            setSavedColors(merged);
+            applyColors(merged);
             return;
           }
         }
@@ -134,9 +164,10 @@ export default function ColorManagerPage() {
         const saved = localStorage.getItem('bexon-colors');
         if (saved) {
           const parsed = JSON.parse(saved);
-          setColors(parsed);
-          setSavedColors(parsed);
-          applyColors(parsed);
+          const merged = mergeColors(parsed);
+          setColors(merged);
+          setSavedColors(merged);
+          applyColors(merged);
         }
       } catch (e) {
         console.error('Failed to load colors:', e);
@@ -145,9 +176,10 @@ export default function ColorManagerPage() {
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            setColors(parsed);
-            setSavedColors(parsed);
-            applyColors(parsed);
+            const merged = mergeColors(parsed);
+            setColors(merged);
+            setSavedColors(merged);
+            applyColors(merged);
           } catch (err) {
             console.error('Failed to load saved colors from localStorage:', err);
           }
@@ -159,6 +191,11 @@ export default function ColorManagerPage() {
 
   // ── Apply colors to CSS variables ──────────────────────────────────────
   const applyColors = (colorObj: typeof defaultColors) => {
+    // Notify the admin theme loader about color changes
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('admin-theme:update', { detail: colorObj }));
+    }
+
     const root = document.documentElement;
     
     // Common colors
@@ -374,7 +411,7 @@ export default function ColorManagerPage() {
         </CardHeader>
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 sm:grid-cols-6 gap-1 m-4">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 m-4 h-auto">
               {Object.keys(colorCategories).map((category) => (
                 <TabsTrigger
                   key={category}

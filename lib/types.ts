@@ -11,7 +11,6 @@ export interface ValidationRule {
   message?: string;
 }
 
-// Collection Type
 export interface Collection {
   id: string;
   name: string;
@@ -19,6 +18,7 @@ export interface Collection {
   description?: string;
   icon?: string;
   color?: string;
+  hidden_fields?: string[];
   created_at: string;
   updated_at: string;
   fields?: Field[];
@@ -62,6 +62,7 @@ export interface CreateCollectionRequest {
   description?: string;
   icon?: string;
   color?: string;
+  hidden_fields?: string[];
 }
 
 export interface UpdateCollectionRequest extends Partial<CreateCollectionRequest> {}

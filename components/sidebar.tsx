@@ -62,7 +62,7 @@ export function Sidebar() {
             .catch(() => ({ success: false }))
         ]);
 
-        if (colJson?.success) setCollections((colJson.data || []).slice().reverse());
+        if (colJson?.success) setCollections(colJson.data || []);
         if (folderJson.success) {
           setFolders(folderJson.data || []);
         } else {
@@ -188,26 +188,94 @@ export function Sidebar() {
     }
   };
 
+  const handleReorderCollections = async (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+    
+    const draggedIndex = collections.findIndex(c => c.id === draggedId);
+    const targetIndex = collections.findIndex(c => c.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const draggedItem = collections[draggedIndex];
+    const targetItem = collections[targetIndex];
+    
+    // If dropped onto a collection in a different folder context, move it instead
+    if ((draggedItem as any).folder_id !== (targetItem as any).folder_id) {
+      handleMoveCollection(draggedId, (targetItem as any).folder_id || null);
+      return;
+    }
+    
+    const newCollections = [...collections];
+    newCollections.splice(draggedIndex, 1);
+    newCollections.splice(targetIndex, 0, draggedItem);
+    
+    setCollections(newCollections);
+    
+    try {
+      // only reorder within the same scope to maintain their indices
+      const scopeItems = newCollections.filter(c => (c as any).folder_id === (draggedItem as any).folder_id);
+      const items = scopeItems.map((c, i) => ({ id: c.id, order: i }));
+        
+      const res = await fetch('/api/collections/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      });
+      if (!res.ok) throw new Error('Failed to reorder collections');
+    } catch (err) {
+      toast({ title: 'Error', description: 'Could not reorder collections', variant: 'destructive' });
+    } finally {
+      setDraggedCollectionId(null);
+      setDropTargetId(null);
+    }
+  };
+
   if (pathname.startsWith('/login')) return null;
 
   // Helper to render a collection item
   const renderCollectionItem = (c: Collection) => {
     const isActive = pathname === `/collections/${c.id}`;
+    const isTarget = dropTargetId === `col-${c.id}`;
     return (
       <div
         key={c.id}
         draggable
-        onDragStart={() => setDraggedCollectionId(c.id)}
-        className="group relative"
+        onDragStart={(e) => {
+          e.stopPropagation();
+          setDraggedCollectionId(c.id);
+        }}
+        onDragEnd={() => {
+          setDraggedCollectionId(null);
+          setDropTargetId(null);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (draggedCollectionId && draggedCollectionId !== c.id) {
+            setDropTargetId(`col-${c.id}`);
+          }
+        }}
+        onDragLeave={() => setDropTargetId(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (draggedCollectionId && draggedCollectionId !== c.id) {
+            handleReorderCollections(draggedCollectionId, c.id);
+          }
+        }}
+        className={cn(
+          "group relative transition-all rounded-lg",
+          isTarget && "border-t-primary border-t-2 bg-primary/5"
+        )}
       >
         <Link
           href={`/collections/${c.id}?collectionName=${c.name}`}
           className={cn(
-            'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-            isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+            'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent hover:text-black py-2 px-3 gap-2',
+            isActive ? 'bg-primary text-primary-foreground font-medium hover:text-black' : 'text-foreground/70'
           )}
         >
-          {c.icon ? <IconRenderer icon={c.icon} className="w-5 h-5 flex-shrink-0" /> : <FileText className="w-4 h-4 opacity-60 flex-shrink-0" />}
+          {c.icon ? <IconRenderer icon={c.icon} className="w-5 h-5 flex-shrink-0" /> : <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />}
           {isOpen && <span className="truncate text-sm">{c.display_name}</span>}
         </Link>
       </div>
@@ -263,11 +331,7 @@ export function Sidebar() {
           ) : (
             <>
 
-              <div className="space-y-1">
-                {collections.filter(c => !(c as any).folder_id).map(renderCollectionItem)}
-              </div>
-
-              {/* Render Folders */}
+              {/* Render Folders First */}
               {folders.map((folder) => {
                 const isExpanded = !!expandedItems[folder.id];
                 const isTarget = dropTargetId === folder.id;
@@ -310,7 +374,7 @@ export function Sidebar() {
                     >
                       <span className="flex items-center gap-2 text-foreground/80 font-semibold text-xs uppercase tracking-wider">
                         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        <Folder className="w-3.5 h-3.5 fill-current opacity-60" />
+                        <Folder className="w-3.5 h-3.5 fill-current text-gray-500" />
                         {isOpen && <span>{folder.name}</span>}
                       </span>
                       {isOpen && (
@@ -333,11 +397,11 @@ export function Sidebar() {
                           <Link
                             href="/global-presence"
                             className={cn(
-                          'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-                          pathname === '/global-presence' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+                          'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent hover:text-black py-2 px-3 gap-2',
+                          pathname === '/global-presence' ? 'bg-primary text-primary-foreground font-medium hover:text-black' : 'text-foreground/70'
                             )}
                           >
-                            <MapPin className="w-4 h-4 opacity-60" />
+                            <MapPin className="w-4 h-4 text-gray-500" />
                             <span className="truncate text-sm">Global Presence</span>
                           </Link>
                         )}
@@ -346,11 +410,31 @@ export function Sidebar() {
                   </div>
                 );
               })}
+
+              <div 
+                className={cn(
+                  "space-y-1 pb-2 transition-all min-h-[20px]",
+                  dropTargetId === 'root' && draggedCollectionId && "bg-primary/10 ring-2 ring-primary/30 rounded-lg"
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggedCollectionId) setDropTargetId('root');
+                }}
+                onDragLeave={() => setDropTargetId(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedCollectionId) {
+                    handleMoveCollection(draggedCollectionId, null);
+                  }
+                }}
+              >
+                {collections.filter(c => !(c as any).folder_id).map(renderCollectionItem)}
+              </div>
             </>
           )}
 
           {/* Static Links */}
-          <div className="mt-4 pt-4 border-t border-border/50 space-y-1">
+          <div className=" border-t border-border/50 space-y-1">
             <Link
               href="/color-manager"
               className={cn(
@@ -358,17 +442,17 @@ export function Sidebar() {
                 pathname === '/color-manager' ? 'bg-primary text-black font-medium' : 'text-foreground/70'
               )}
             >
-              <Palette className="w-4 h-4 opacity-60" />
+              <IconRenderer icon="ph:palette-fill" className="w-6 h-6 text-gray-500" />
               {isOpen && <span className="truncate text-sm">Color Manager</span>}
             </Link>
             <Link
               href="/page-manager"
               className={cn(
-                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-                pathname === '/page-manager' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent hover:text-black py-2 px-3 gap-2',
+                pathname === '/page-manager' ? 'bg-primary text-primary-foreground font-medium hover:text-black' : 'text-foreground/70'
               )}
             >
-              <File className="w-4 h-4 opacity-60" />
+              <IconRenderer icon="ph:file-text-fill" className="w-6 h-6 text-gray-500" />
               {isOpen && <span className="truncate text-sm">Page Manager</span>}
             </Link> 
 
@@ -381,31 +465,31 @@ export function Sidebar() {
             <Link
               href="/email-templates"
               className={cn(
-                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-                pathname === '/email-templates' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent hover:text-black py-2 px-3 gap-2',
+                pathname === '/email-templates' ? 'bg-primary text-primary-foreground font-medium hover:text-black' : 'text-foreground/70'
               )}
             >
-              <Mail className="w-4 h-4 opacity-60" />
+              <IconRenderer icon="ph:envelope-simple-fill" className="w-6 h-6 text-gray-500" />
               {isOpen && <span className="truncate text-sm">Email Templates</span>}
             </Link>
             <Link
               href="/send-email"
               className={cn(
-                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-                pathname === '/send-email' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent hover:text-black py-2 px-3 gap-2',
+                pathname === '/send-email' ? 'bg-primary text-primary-foreground font-medium hover:text-black' : 'text-foreground/70'
               )}
             >
-              <Send className="w-4 h-4 opacity-60" />
+              <IconRenderer icon="ph:paper-plane-right-fill" className="w-6 h-6 text-gray-500" />
               {isOpen && <span className="truncate text-sm">Send Email</span>}
             </Link>
             <Link
               href="/settings"
               className={cn(
-                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent py-2 px-3 gap-2',
-                pathname === '/settings' ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground/70'
+                'flex items-center text-foreground rounded-lg transition-all duration-200 hover:bg-accent hover:text-black py-2 px-3 gap-2',
+                pathname === '/settings' ? 'bg-primary text-primary-foreground font-medium hover:text-black' : 'text-foreground/70'
               )}
             >
-              <Settings className="w-4 h-4 opacity-60" />
+              <IconRenderer icon="ph:gear-fill" className="w-6 h-6 text-gray-500" />
               {isOpen && <span className="truncate text-sm">Global Settings</span>}
             </Link>
           </div>
@@ -421,7 +505,7 @@ export function Sidebar() {
                   size="sm"
                   className={cn('w-full text-muted-foreground hover:text-primary', isOpen ? 'justify-start gap-2' : 'justify-center')}
                 >
-                  <FolderPlus className="w-4 h-4" />
+                  <FolderPlus className="w-4 h-4 " />
                   {isOpen && <span className="text-xs">Add Section</span>}
                 </Button>
               </DialogTrigger>

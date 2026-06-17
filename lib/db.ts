@@ -58,7 +58,7 @@ export async function getCollections() {
     const collectionsCol = db.collection<Omit<Collection, 'id'> & { _id: ObjectId }>('collections');
     const fieldsCol = db.collection<Omit<Field, 'id'> & { _id: ObjectId }>('fields');
 
-    const collections = await collectionsCol.find({}).sort({ created_at: -1 }).toArray();
+    const collections = await collectionsCol.find({}).sort({ order: 1, created_at: -1 }).toArray();
 
     const counts = await fieldsCol
       .aggregate<{ _id: string; count: number }>([{ $group: { _id: '$collection_id', count: { $sum: 1 } } }])

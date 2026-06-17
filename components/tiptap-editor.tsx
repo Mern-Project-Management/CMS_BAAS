@@ -294,8 +294,8 @@ const saveProduct = useCallback(async () => {
       title={title}
       className={`h-7 w-7 p-0 rounded transition-colors ${
         isActive
-          ? 'bg-primary/15 text-primary hover:bg-primary/20'
-          : 'text-foreground/70 hover:bg-muted hover:text-foreground'
+          ? 'bg-black/20 text-white hover:bg-black/30'
+          : 'text-white/70 hover:bg-white/10 hover:text-white'
       }`}
     >
       {children}
@@ -303,10 +303,10 @@ const saveProduct = useCallback(async () => {
   );
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-background shadow-sm">
+    <div className="border border-border rounded-lg bg-background shadow-sm">
 
       {editable && (
-        <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5 border-b border-border bg-muted/40">
+        <div className="sticky top-0 z-10 flex items-center gap-0.5 flex-wrap px-2 py-1.5 border-b border-primary bg-primary text-primary-foreground rounded-t-lg">
 
           {/* ── Heading / Paragraph dropdown ── */}
           <DropdownMenu>
@@ -315,10 +315,10 @@ const saveProduct = useCallback(async () => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs font-medium min-w-[100px] justify-between gap-1 text-foreground/80 hover:bg-muted"
+                className="h-7 px-2 text-xs font-medium min-w-[100px] justify-between gap-1 text-white hover:bg-white/10 hover:text-white"
               >
                 {headingLabel}
-                <span className="text-muted-foreground">▾</span>
+                <span className="text-white/50">▾</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-44">
@@ -342,7 +342,7 @@ const saveProduct = useCallback(async () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Text formatting ── */}
           <TB onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Bold (Ctrl+B)">
@@ -361,12 +361,12 @@ const saveProduct = useCallback(async () => {
             <Code className="w-3.5 h-3.5" />
           </TB>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Colors ── */}
           <div className="flex items-center gap-1">
-            <div className="relative flex items-center justify-center w-7 h-7 rounded hover:bg-muted transition-colors overflow-hidden" title="Text Color">
-              <Palette className="w-3.5 h-3.5 text-foreground/70 pointer-events-none" style={{ color: editor.getAttributes('textStyle').color }} />
+            <div className="relative flex items-center justify-center w-7 h-7 rounded hover:bg-white/10 transition-colors overflow-hidden" title="Text Color">
+              <Palette className="w-3.5 h-3.5 text-white/70 pointer-events-none" style={{ color: editor.getAttributes('textStyle').color }} />
               <input
                 type="color"
                 onInput={(e) => editor.chain().focus().setColor((e.target as HTMLInputElement).value).run()}
@@ -374,8 +374,8 @@ const saveProduct = useCallback(async () => {
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
             </div>
-            <div className="relative flex items-center justify-center w-7 h-7 rounded hover:bg-muted transition-colors overflow-hidden" title="Highlight Color">
-              <Highlighter className="w-3.5 h-3.5 text-foreground/70 pointer-events-none" style={{ color: editor.getAttributes('highlight').color }} />
+            <div className="relative flex items-center justify-center w-7 h-7 rounded hover:bg-white/10 transition-colors overflow-hidden" title="Highlight Color">
+              <Highlighter className="w-3.5 h-3.5 text-white/70 pointer-events-none" style={{ color: editor.getAttributes('highlight').color }} />
               <input
                 type="color"
                 onInput={(e) => editor.chain().focus().setHighlight({ color: (e.target as HTMLInputElement).value }).run()}
@@ -385,7 +385,7 @@ const saveProduct = useCallback(async () => {
             </div>
           </div>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Lists ── */}
           <TB onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Bullet list">
@@ -395,7 +395,7 @@ const saveProduct = useCallback(async () => {
             <ListOrdered className="w-3.5 h-3.5" />
           </TB>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Blocks ── */}
           <TB onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Blockquote">
@@ -408,7 +408,7 @@ const saveProduct = useCallback(async () => {
             <Minus className="w-3.5 h-3.5" />
           </TB>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Link ── */}
           <TB onClick={setLink} isActive={editor.isActive('link')} title="Insert link">
@@ -423,7 +423,7 @@ const saveProduct = useCallback(async () => {
           {/* ── Image Resizing ── */}
           {editor.isActive('image') && (
             <>
-              <Separator orientation="vertical" className="h-5 mx-1" />
+              <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
               <TB onClick={() => editor.chain().focus().updateAttributes('image', { width: '25%' }).run()} title="Small (25%)">
                 <span className="text-[10px] font-bold">25%</span>
               </TB>
@@ -436,7 +436,7 @@ const saveProduct = useCallback(async () => {
             </>
           )}
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Alignment ── */}
           <TB onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} title="Align left">
@@ -452,7 +452,7 @@ const saveProduct = useCallback(async () => {
             <AlignJustify className="w-3.5 h-3.5" />
           </TB>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
 
           {/* ── Tables ── */}
           <DropdownMenu>
@@ -461,7 +461,7 @@ const saveProduct = useCallback(async () => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs font-medium text-foreground/80 hover:bg-muted"
+                className="h-7 px-2 text-xs font-medium text-white hover:bg-white/10 hover:text-white"
                 title="Insert table"
               >
                 <TableIcon className="w-3.5 h-3.5 mr-1" />
@@ -507,14 +507,14 @@ const saveProduct = useCallback(async () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
           <TB onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo (Ctrl+Z)">
             <Undo className="w-3.5 h-3.5" />
           </TB>
           <TB onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo (Ctrl+Y)">
             <Redo className="w-3.5 h-3.5" />
           </TB>
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-1 bg-white/20" />
           <TB onClick={saveProduct} title="Save product">
             <Plus className="w-3.5 h-3.5" />
           </TB>

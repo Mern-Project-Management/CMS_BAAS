@@ -48,6 +48,7 @@ type Props = {
   records: RecordRow[];
   title?: string;
   hiddenFieldNames?: string[];
+  hiddenFields?: string[];
   onDelete: () => void;
   onUpdate?: () => void;
   /** Optional: render a status badge/indicator per row (e.g. for events) */
@@ -73,6 +74,7 @@ export function RecordsTable({
   records,
   title = 'Records',
   hiddenFieldNames = [],
+  hiddenFields = [],
   onDelete,
   onUpdate,
   statusRenderer,
@@ -81,7 +83,14 @@ export function RecordsTable({
 
   // All fields — we intentionally IGNORE hiddenFieldNames so all data is shown
   const allFields = fields;
-  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => new Set(hiddenFields));
+  
+  // Keep state in sync if prop changes
+  useEffect(() => {
+    setHiddenCols(new Set(hiddenFields));
+  }, [hiddenFields]);
+
   const shownFields = allFields.filter((f) => !hiddenCols.has(f.id));
 
   // Extra keys present in records but NOT in fields schema
@@ -167,12 +176,30 @@ const extraKeys = records.length > 0
     }
   }
 
+  const updateDbHiddenCols = async (newHidden: Set<string>) => {
+    try {
+      await fetch(`/api/collections/${collectionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden_fields: Array.from(newHidden) }),
+      });
+    } catch (err) {
+      console.error('Failed to save column visibility', err);
+    }
+  };
+
   const toggleCol = (fieldId: string) => {
     setHiddenCols((prev) => {
       const next = new Set(prev);
       next.has(fieldId) ? next.delete(fieldId) : next.add(fieldId);
+      updateDbHiddenCols(next);
       return next;
     });
+  };
+
+  const showAllCols = () => {
+    setHiddenCols(new Set());
+    updateDbHiddenCols(new Set());
   };
 
   function renderEditField(field: Field) {
@@ -347,6 +374,7 @@ const extraKeys = records.length > 0
                       key={f.id}
                       checked={!hiddenCols.has(f.id)}
                       onCheckedChange={() => toggleCol(f.id)}
+                      onSelect={(e) => e.preventDefault()}
                     >
                       {f.display_name}
                     </DropdownMenuCheckboxItem>
@@ -359,7 +387,7 @@ const extraKeys = records.length > 0
                           variant="ghost"
                           size="sm"
                           className="w-full h-7 text-xs"
-                          onClick={() => setHiddenCols(new Set())}
+                          onClick={showAllCols}
                         >
                           Show all
                         </Button>
@@ -471,7 +499,7 @@ const extraKeys = records.length > 0
           VIEW MODAL
       ══════════════════════════════════════ */}
       <Dialog open={!!viewRecord} onOpenChange={(o) => !o && setViewRecord(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-primary">Record Details</DialogTitle>
           </DialogHeader>
@@ -525,7 +553,7 @@ const extraKeys = records.length > 0
           EDIT MODAL
       ══════════════════════════════════════ */}
       <Dialog open={!!editRecord} onOpenChange={(o) => !o && setEditRecord(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-primary">Edit Record</DialogTitle>
           </DialogHeader>

@@ -65,7 +65,7 @@ export async function PATCH(
       : { name: id };
 
     const body = await request.json();
-    const { folder_id, name, display_name, description, icon, color } = body;
+    const { folder_id, name, display_name, description, icon, color, hidden_fields } = body;
 
     const updateDoc: any = {};
 
@@ -74,6 +74,7 @@ export async function PATCH(
     if (description !== undefined) updateDoc.description = description;
     if (icon !== undefined) updateDoc.icon = icon;
     if (color !== undefined) updateDoc.color = color;
+    if (hidden_fields !== undefined) updateDoc.hidden_fields = hidden_fields;
 
     if (folder_id !== undefined) {
       if (folder_id === null) {
