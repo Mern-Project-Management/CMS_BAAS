@@ -14,7 +14,6 @@ export async function GET(
   context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    await requireAuth();
     const { slug } = await context.params;
     const db = await getDb();
 

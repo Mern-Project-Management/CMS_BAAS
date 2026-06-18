@@ -476,10 +476,13 @@ export async function getRecords(
 ) {
   try {
     const db = await getDb();
+    const options: any = { sort: { created_at: -1 }, limit };
+    if (projection) {
+      options.projection = projection;
+    }
+    
     const docs = await db.collection(collectionName)
-      .find(filter)
-      .sort({ created_at: -1 })
-      .limit(limit)
+      .find(filter, options)
       .toArray();
     const data = docs.map((d) => normalizeDocId(d as any));
     return { data, error: null as null };
