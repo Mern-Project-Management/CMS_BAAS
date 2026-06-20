@@ -88,3 +88,37 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Internal server error' } as ApiResponse<null>, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    await requireRole(['superadmin']);
+    const body = await request.json();
+    const { id, name } = body;
+
+    if (!id || !name) {
+      return NextResponse.json({ success: false, error: 'Folder ID and name are required' } as ApiResponse<null>, { status: 400 });
+    }
+
+    let objectId: ObjectId;
+    try {
+      objectId = new ObjectId(id);
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid ID format' } as ApiResponse<null>, { status: 400 });
+    }
+
+    const db = await getDb();
+    const result = await db.collection('sidebar_folders').updateOne(
+      { _id: objectId },
+      { $set: { name } }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ success: false, error: 'Folder not found' } as ApiResponse<null>, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: { id, name } } as ApiResponse<{ id: string, name: string }>);
+  } catch (error) {
+    console.error('Sidebar folders PATCH error:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' } as ApiResponse<null>, { status: 500 });
+  }
+}
