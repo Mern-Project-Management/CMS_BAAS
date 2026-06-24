@@ -12,6 +12,7 @@ import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { RecordForm } from '@/components/record-form';
 import { IconRenderer } from '@/components/icon-renderer';
 import { RecordsTable } from '@/components/records-table';
+import { PagesMetaTable } from '@/components/pages-meta-table';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-client';
 import { ChevronLeft, Edit2, Calendar, Clock, Plus, Settings } from 'lucide-react';
@@ -447,6 +448,15 @@ export default function CollectionDetailPage() {
                         />
                       </div>
                     </div>
+                  ) : resolvedId === 'manage-meta' ? (
+                    <PagesMetaTable
+                      collectionId={collectionId}
+                      fields={fields}
+                      records={records}
+                      onDelete={() => setRecordRefresh((p) => p + 1)}
+                      onUpdate={() => setRecordRefresh((p) => p + 1)}
+                      onAddNewClick={() => setIsRecordFormOpen(true)}
+                    />
                   ) : (
                     <RecordsTable
                       collectionId={collectionId}

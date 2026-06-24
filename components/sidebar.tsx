@@ -456,9 +456,10 @@ export function Sidebar() {
 
               {/* Render Folders First */}
               {folders.map((folder) => {
+                // Hide manage-meta from folder collections (shown as static "Pages Metadata" link in SEO section)
                 const isExpanded = !!expandedItems[folder.id];
                 const isTarget = dropTargetId === folder.id;
-                const folderCollections = collections.filter(c => (c as any).folder_id === folder.id);
+                const folderCollections = collections.filter(c => (c as any).folder_id === folder.id && c.name !== 'manage-meta');
 
                 if (isOpen) {
                   return (
@@ -617,7 +618,7 @@ export function Sidebar() {
                   }
                 }}
               >
-                {collections.filter(c => !(c as any).folder_id).map(renderCollectionItem)}
+                {collections.filter(c => !(c as any).folder_id && c.name !== 'manage-meta').map(renderCollectionItem)}
               </div>
             </>
           )}
@@ -637,6 +638,17 @@ export function Sidebar() {
             {renderSidebarLink("/email-templates", "Email Templates", <IconRenderer icon="ph:envelope-simple-fill" className="w-6 h-6 text-gray-500" />, pathname === '/email-templates')}
             {renderSidebarLink("/send-email", "Send Email", <IconRenderer icon="ph:paper-plane-right-fill" className="w-6 h-6 text-gray-500" />, pathname === '/send-email')}
             {renderSidebarLink("/settings", "Global Settings", <IconRenderer icon="ph:gear-fill" className="w-6 h-6 text-gray-500" />, pathname === '/settings')}
+
+            {/* SEO Section */}
+            <div className="pt-2 pb-1 border-t border-border/50">
+              <p className={cn("px-3 text-xs font-semibold text-foreground/50 uppercase tracking-wider", !isOpen && "text-center")}>
+                {isOpen ? 'SEO Management' : 'SEO'}
+              </p>
+            </div>
+            {renderSidebarLink("/seo/settings", "SEO Settings", <IconRenderer icon="ph:globe-bold" className="w-6 h-6 text-gray-500" />, pathname.startsWith('/seo/settings'))}
+            {renderSidebarLink("/collections/6a2cd928c7ccfc7bea1e0099?collectionName=manage-meta", "Pages Metadata", <IconRenderer icon="ph:files-bold" className="w-6 h-6 text-gray-500" />, pathname.includes('6a2cd928c7ccfc7bea1e0099'))}
+            {renderSidebarLink("/seo/audit", "SEO Audit", <IconRenderer icon="ph:shield-check-bold" className="w-6 h-6 text-gray-500" />, pathname.startsWith('/seo/audit'))}
+            {renderSidebarLink("/seo/redirects", "Redirects", <IconRenderer icon="ph:arrows-merge-bold" className="w-6 h-6 text-gray-500" />, pathname.startsWith('/seo/redirects'))}
           </div>
         </div>
 
