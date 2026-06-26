@@ -632,7 +632,7 @@ export default function ApiDocsPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
-    } else if (!authLoading && user && (user.role as string) !== 'super_admin') {
+    } else if (!authLoading && user && (user.role as string) !== 'superadmin') {
       router.push('/dashboard');
       toast({
         title: 'Access Denied',

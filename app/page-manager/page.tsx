@@ -58,6 +58,12 @@ const PAGES: Array<{ key: string; label: string; description: string }> = [
   { key: 'terms-and-conditions', label: 'Terms and Conditions', description: 'Terms and conditions page sections' },
 ];
 
+interface PageVisibility {
+  key: string;
+  path: string;
+  is_hidden: boolean;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 export default function PageManagerPage() {
   const router = useRouter();
@@ -71,6 +77,8 @@ export default function PageManagerPage() {
   const [syncing, setSyncing] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [expandedPages, setExpandedPages] = useState<Record<string, boolean>>({ 'home-02': true });
+  const [pageVisibility, setPageVisibility] = useState<Record<string, boolean>>({});
+  const [savingPageVisibility, setSavingPageVisibility] = useState(false);
 
   const [dragItemIndex, setDragItemIndex] = useState<number | null>(null);
   const [dragOverItemIndex, setDragOverItemIndex] = useState<number | null>(null);
@@ -109,6 +117,54 @@ export default function PageManagerPage() {
   useEffect(() => {
     fetchComponents(activePage);
   }, [activePage, fetchComponents]);
+
+  // ── Fetch page visibility ─────────────────────────────────────────────
+  const fetchPageVisibility = useCallback(async () => {
+    try {
+      const res = await fetch('/api/page-visibility');
+      const json = await res.json();
+      if (json.success) {
+        const visibilityMap: Record<string, boolean> = {};
+        json.data.forEach((page: PageVisibility) => {
+          visibilityMap[page.key] = page.is_hidden;
+        });
+        setPageVisibility(visibilityMap);
+      }
+    } catch (err) {
+      console.error('Failed to fetch page visibility:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPageVisibility();
+  }, [fetchPageVisibility]);
+
+  // ── Toggle page visibility ─────────────────────────────────────────────
+  const togglePageVisibility = async (pageKey: string) => {
+    setSavingPageVisibility(true);
+    try {
+      const newHiddenStatus = !pageVisibility[pageKey];
+      const res = await fetch('/api/page-visibility', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_key: pageKey, is_hidden: newHiddenStatus }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPageVisibility(prev => ({ ...prev, [pageKey]: newHiddenStatus }));
+        toast({ 
+          title: newHiddenStatus ? 'Page hidden' : 'Page visible',
+          description: `${PAGES.find(p => p.key === pageKey)?.label} is now ${newHiddenStatus ? 'hidden' : 'visible'}.`
+        });
+      } else {
+        throw new Error(json.error);
+      }
+    } catch (err) {
+      toast({ title: 'Error', description: 'Could not update page visibility.', variant: 'destructive' });
+    } finally {
+      setSavingPageVisibility(false);
+    }
+  };
 
   // ── Toggle visibility ─────────────────────────────────────────────────
   const toggleActive = (key: string) => {
@@ -297,35 +353,68 @@ export default function PageManagerPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:items-start">
         {/* Left: Page selector */}
         <div className="lg:col-span-1 space-y-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] overflow-y-auto pr-1 pb-4 custom-scrollbar">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mb-3">
-            Pages
-          </p>
+          <div className="flex items-center justify-between px-1 mb-3">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Pages
+            </p>
+            <span className="text-xs text-muted-foreground">
+              {Object.values(pageVisibility).filter(v => v).length} hidden
+            </span>
+          </div>
           {PAGES.map((page) => (
-            <button
+            <div
               key={page.key}
-              onClick={() => {
-                if (dirty) {
-                  if (!confirm('You have unsaved changes. Switch page anyway?')) return;
-                }
-                setActivePage(page.key);
-              }}
               className={cn(
-                'w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all duration-150',
-                activePage === page.key
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'hover:bg-accent text-foreground/70'
+                'group flex items-center gap-2',
+                pageVisibility[page.key] ? 'opacity-50' : ''
               )}
             >
-              <span className="block font-medium">{page.label}</span>
-              <span
+              <button
+                onClick={() => {
+                  if (dirty) {
+                    if (!confirm('You have unsaved changes. Switch page anyway?')) return;
+                  }
+                  setActivePage(page.key);
+                }}
                 className={cn(
-                  'block text-xs mt-0.5',
-                  activePage === page.key ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                  'flex-1 text-left px-3 py-2.5 rounded-lg text-sm transition-all duration-150',
+                  activePage === page.key
+                    ? 'bg-primary text-primary-foreground font-medium'
+                    : 'hover:bg-accent text-foreground/70'
                 )}
               >
-                {page.description}
-              </span>
-            </button>
+                <span className="block font-medium">{page.label}</span>
+                <span
+                  className={cn(
+                    'block text-xs mt-0.5',
+                    activePage === page.key ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                  )}
+                >
+                  {page.description}
+                </span>
+              </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'h-8 w-8 shrink-0 transition-colors opacity-0 group-hover:opacity-100',
+                  pageVisibility[page.key]
+                    ? 'text-red-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30'
+                    : 'text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+                )}
+                onClick={() => togglePageVisibility(page.key)}
+                disabled={savingPageVisibility}
+                title={pageVisibility[page.key] ? 'Show this page' : 'Hide this page'}
+              >
+                {savingPageVisibility ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : pageVisibility[page.key] ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           ))}
         </div>
 
