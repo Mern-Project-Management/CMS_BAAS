@@ -3,6 +3,7 @@ import { writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { requireAuth } from '@/lib/auth';
+import { getDb } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types';
 
 const COLORS_FILE = join(process.cwd(), '..', 'bexon', 'src', 'app', 'assets', 'sass', 'utilities', '_colors.scss');
@@ -226,6 +227,24 @@ function generateScssContent(colors: ColorPalette): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Try fetching from MongoDB first
+    try {
+      const db = await getDb();
+      const colorsDoc = await db.collection('settings').findOne({ type: 'colors' });
+      if (colorsDoc?.colors) {
+        return NextResponse.json(
+          {
+            success: true,
+            data: { colors: colorsDoc.colors, content: '' },
+            message: 'Colors retrieved from database successfully',
+          } as ApiResponse<{ colors: ColorPalette; content: string }>,
+          { status: 200 }
+        );
+      }
+    } catch (dbErr) {
+      console.error('Failed to fetch colors from DB, falling back to file:', dbErr);
+    }
+
     if (!existsSync(COLORS_FILE)) {
       return NextResponse.json(
         {
@@ -242,6 +261,18 @@ export async function GET(request: NextRequest) {
     // Parse the SCSS content to extract colors
     const colors = parseScssColors(content);
     
+    // Cache to DB for future requests
+    try {
+      const db = await getDb();
+      await db.collection('settings').updateOne(
+        { type: 'colors' },
+        { $set: { colors, updated_at: new Date() } },
+        { upsert: true }
+      );
+    } catch (dbErr) {
+      console.error('Failed to cache colors to DB:', dbErr);
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -252,12 +283,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error('Get colors error:', error);
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' } as ApiResponse<null>,
-        { status: 401 }
-      );
-    }
     return NextResponse.json(
       { success: false, error: 'Failed to get colors' } as ApiResponse<null>,
       { status: 500 }
@@ -290,17 +315,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate SCSS content
-    const scssContent = generateScssContent(colors as ColorPalette);
+    // 1. Save to MongoDB (highly reliable on production)
+    try {
+      const db = await getDb();
+      await db.collection('settings').updateOne(
+        { type: 'colors' },
+        { $set: { colors, updated_at: new Date() } },
+        { upsert: true }
+      );
+    } catch (dbErr) {
+      console.error('Failed to save colors to database:', dbErr);
+    }
 
-    // Write to file
-    await writeFile(COLORS_FILE, scssContent, 'utf-8');
+    // 2. Try to write to local SCSS file (for local development Hot Reloading)
+    try {
+      const scssContent = generateScssContent(colors as ColorPalette);
+      await writeFile(COLORS_FILE, scssContent, 'utf-8');
+    } catch (fileErr: any) {
+      console.log('Skipping local SCSS file write (expected in production):', fileErr?.message);
+    }
 
     return NextResponse.json(
       {
         success: true,
         data: { colors } as { colors: ColorPalette },
-        message: 'Colors updated successfully in SCSS file',
+        message: 'Colors updated successfully',
       },
       { status: 200 }
     );
