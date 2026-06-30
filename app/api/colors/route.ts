@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
     // Try fetching from MongoDB first
     try {
       const db = await getDb();
-      const colorsDoc = await db.collection('settings').findOne({ type: 'colors' });
+      const colorsDoc = await db.collection('colors').findOne({});
       if (colorsDoc?.colors) {
         return NextResponse.json(
           {
@@ -266,8 +266,8 @@ export async function GET(request: NextRequest) {
     // Cache to DB for future requests
     try {
       const db = await getDb();
-      await db.collection('settings').updateOne(
-        { type: 'colors' },
+      await db.collection('colors').updateOne(
+        {},
         { $set: { colors, updated_at: new Date() } },
         { upsert: true }
       );
@@ -320,8 +320,8 @@ export async function POST(request: NextRequest) {
     // 1. Save to MongoDB (highly reliable on production)
     try {
       const db = await getDb();
-      await db.collection('settings').updateOne(
-        { type: 'colors' },
+      await db.collection('colors').updateOne(
+        {},
         { $set: { colors, updated_at: new Date() } },
         { upsert: true }
       );
