@@ -226,8 +226,6 @@ function generateScssContent(colors: ColorPalette): string {
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth();
-
     if (!existsSync(COLORS_FILE)) {
       return NextResponse.json(
         { success: false, error: 'Colors file not found' } as ApiResponse<null>,
