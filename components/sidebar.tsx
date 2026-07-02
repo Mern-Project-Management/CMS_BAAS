@@ -713,7 +713,7 @@ export function Sidebar() {
               </DialogContent>
             </Dialog>
 
-            <Link href="/">
+            <Link href="/collections">
               {!isOpen ? (
                 <Tooltip delayDuration={100}>
                   <TooltipTrigger asChild>

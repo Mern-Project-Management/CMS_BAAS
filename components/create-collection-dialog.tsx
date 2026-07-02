@@ -45,9 +45,10 @@ const DEFAULT_ICONS = [
 
 interface CreateCollectionDialogProps {
   onSuccess?: (collection: Collection) => void;
+  trigger?: React.ReactNode;
 }
 
-export function CreateCollectionDialog({ onSuccess }: CreateCollectionDialogProps) {
+export function CreateCollectionDialog({ onSuccess, trigger }: CreateCollectionDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchIcon, setSearchIcon] = useState('');
@@ -161,10 +162,12 @@ export function CreateCollectionDialog({ onSuccess }: CreateCollectionDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          New Collection
-        </Button>
+        {trigger || (
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Collection
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
