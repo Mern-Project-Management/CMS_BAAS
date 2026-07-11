@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -41,7 +41,7 @@ import { HierarchicalSelector } from './hierarchical-selector';
 import { PageRouteSelector } from './page-route-selector';
 import { TipTapEditor } from './tiptap-editor';
 import { ColorField, ColorSwatch } from './color-field';
-import { Eye, Pencil, Trash2, Columns3, X, Save, FileText } from 'lucide-react';
+import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, AlertTriangle } from 'lucide-react';
 import type { Field } from '@/lib/types';
 
 const slugify = (str: string) =>
@@ -162,6 +162,7 @@ const extraKeys = records.length > 0
   const [editData, setEditData] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const openEdit = useCallback((record: RecordRow) => {
     const seed: Record<string, any> = {};
@@ -178,8 +179,9 @@ const extraKeys = records.length > 0
       const res = await fetch(`/api/data/${collectionId}/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Delete failed');
-      toast({ title: 'Record deleted' });
+      toast({ title: 'Record deleted', variant: 'success' });
       onDelete();
+      setDeleteConfirmId(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -198,7 +200,7 @@ const extraKeys = records.length > 0
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Update failed');
-      toast({ title: 'Record updated' });
+      toast({ title: 'Record updated', variant: 'success' });
       setEditRecord(null);
       onUpdate?.();
       onDelete();
@@ -617,7 +619,7 @@ const extraKeys = records.length > 0
                           size="icon"
                           className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
                           title="Delete record"
-                          onClick={() => handleDelete(r.id)}
+                          onClick={() => setDeleteConfirmId(r.id)}
                           disabled={deletingId === r.id}
                         >
                           {deletingId === r.id ? (
@@ -800,6 +802,44 @@ const extraKeys = records.length > 0
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* ── DELETE CONFIRMATION MODAL ── */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(o) => !o && setDeleteConfirmId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to permanently delete this record? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              disabled={deletingId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              disabled={deletingId !== null}
+              className="gap-1.5"
+            >
+              {deletingId !== null ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-destructive-foreground/30 border-t-destructive-foreground animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

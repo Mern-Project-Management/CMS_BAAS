@@ -63,6 +63,8 @@ const defaultColors = {
     border: '#e4e4e7',
     sidebarBackground: '#ffffff',
     sidebarForeground: '#0f172a',
+    success: '#10b981',
+    successForeground: '#052e16',
   },
 };
 
@@ -106,7 +108,8 @@ const colorCategories = {
   admin: [
     'background', 'foreground', 'card', 'cardForeground', 
     'primary', 'primaryForeground', 'border', 
-    'sidebarBackground', 'sidebarForeground'
+    'sidebarBackground', 'sidebarForeground',
+    'success', 'successForeground'
   ],
 };
 

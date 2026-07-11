@@ -2,7 +2,7 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config({ path: '.env' });
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || 'CMS';
+const dbName = process.env.MONGODB_DB || 'ostech';
 const COLLECTION_NAME = 'manage-meta';
 
 async function setup() {

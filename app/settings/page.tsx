@@ -16,6 +16,8 @@ interface SettingsData {
   smtp_user: string;
   smtp_pass: string;
   db_uri: string;
+  db_name: string;
+  next_public_api_url: string;
 }
 
 export default function SettingsPage() {
@@ -29,7 +31,9 @@ export default function SettingsPage() {
     smtp_secure: true,
     smtp_user: '',
     smtp_pass: '',
-    db_uri: ''
+    db_uri: '',
+    db_name: '',
+    next_public_api_url: '',
   });
 
   useEffect(() => {
@@ -45,6 +49,8 @@ export default function SettingsPage() {
             smtp_user: json.data.smtp_user || '',
             smtp_pass: json.data.smtp_pass || '',
             db_uri: json.data.db_uri || '',
+            db_name: json.data.db_name || '',
+            next_public_api_url: json.data.next_public_api_url || '',
           });
         }
       } catch (err) {
@@ -120,16 +126,38 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="db_uri">MongoDB URI</Label>
+              <Input 
+                id="db_uri"
+                name="db_uri"
+                value={formData.db_uri}
+                onChange={handleChange}
+                placeholder="mongodb+srv://..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">Warning: Invalid URI will break the admin panel.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="db_name">Database Name (db_name)</Label>
+              <Input 
+                id="db_name"
+                name="db_name"
+                value={formData.db_name}
+                onChange={handleChange}
+                placeholder="manufacturing"
+              />
+            </div>
+          </div>
           <div className="space-y-2">
-            <Label htmlFor="db_uri">MongoDB URI</Label>
+            <Label htmlFor="next_public_api_url">API Endpoint URL (next_public_api_url)</Label>
             <Input 
-              id="db_uri"
-              name="db_uri"
-              value={formData.db_uri}
+              id="next_public_api_url"
+              name="next_public_api_url"
+              value={formData.next_public_api_url}
               onChange={handleChange}
-              placeholder="mongodb+srv://..."
+              placeholder="http://localhost:3000"
             />
-            <p className="text-xs text-muted-foreground mt-1">Warning: Invalid URI will break the admin panel.</p>
           </div>
         </CardContent>
       </Card>

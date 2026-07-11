@@ -41,21 +41,79 @@ export function Navbar() {
     email: '',
     currentPassword: '',
     newPassword: '',
+    logo_url: '',
+    favicon_url: '',
   });
 
-  const openProfile = () => {
+  const openProfile = async () => {
     setForm({
       username: user?.username ?? '',
       email: user?.email ?? '',
       currentPassword: '',
       newPassword: '',
+      logo_url: '',
+      favicon_url: '',
     });
     setIsProfileOpen(true);
+
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setForm(p => ({
+            ...p,
+            logo_url: json.data.logo_url || '',
+            favicon_url: json.data.favicon_url || '',
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load settings in profile dialog', e);
+    }
+  };
+
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('File upload failed');
+    const json = await res.json();
+    if (!json.success || !json.url) throw new Error(json.error || 'File upload failed');
+    return json.url;
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // 1. Upload files first if selected
+      let uploadedLogo = (form as any).logo_url;
+      let uploadedFavicon = (form as any).favicon_url;
+
+      if ((form as any).logoFile) {
+        uploadedLogo = await uploadFile((form as any).logoFile);
+      }
+      if ((form as any).faviconFile) {
+        uploadedFavicon = await uploadFile((form as any).faviconFile);
+      }
+
+      // 2. Save settings brand assets if changed
+      if (uploadedLogo !== (form as any).logo_url || uploadedFavicon !== (form as any).favicon_url) {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            logo_url: uploadedLogo,
+            favicon_url: uploadedFavicon,
+          }),
+        });
+        window.dispatchEvent(new CustomEvent('sidebar:refresh'));
+      }
+
+      // 3. Save profile attributes
       const payload: Record<string, string> = {};
 
       if (form.username.trim() && form.username.trim() !== user?.username) {
@@ -69,33 +127,27 @@ export function Navbar() {
         payload.newPassword = form.newPassword;
       }
 
-      if (Object.keys(payload).length === 0) {
-        toast({ title: 'No changes to save' });
-        setIsProfileOpen(false);
-        return;
-      }
+      if (Object.keys(payload).length > 0) {
+        const res = await fetch('/api/auth/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json();
 
-      const res = await fetch('/api/auth/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-
-      if (!json.success) {
-        toast({ title: 'Error', description: json.error, variant: 'destructive' });
-        return;
+        if (!json.success) {
+          toast({ title: 'Error', description: json.error, variant: 'destructive' });
+          return;
+        }
       }
 
       toast({ title: 'Profile updated', description: 'Your changes have been saved.' });
       setIsProfileOpen(false);
 
-      // If username or email changed, reload to refresh session
-      if (payload.username || payload.email) {
-        window.location.reload();
-      }
-    } catch {
-      toast({ title: 'Error', description: 'Something went wrong.', variant: 'destructive' });
+      // Refresh to update header logo, favicon, and username/email
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Something went wrong.', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -185,7 +237,7 @@ export function Navbar() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
@@ -198,81 +250,137 @@ export function Navbar() {
               <span className="text-xs text-muted-foreground ml-auto">Role cannot be changed here</span>
             </div>
 
-            {/* Username */}
-            <div className="space-y-1.5">
-              <Label htmlFor="profile-username">Username</Label>
-              <Input
-                id="profile-username"
-                value={form.username}
-                onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
-                placeholder="Enter username"
-                autoComplete="username"
-              />
-            </div>
-
-            {/* Email */}
-            <div className="space-y-1.5">
-              <Label htmlFor="profile-email">Email</Label>
-              <Input
-                id="profile-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                placeholder="Enter email"
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="border-t border-border pt-4 space-y-3">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                Change Password (optional)
-              </p>
-
-              {/* Current password */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              {/* Username */}
               <div className="space-y-1.5">
-                <Label htmlFor="current-password">Current Password</Label>
-                <div className="relative">
-                  <Input
-                    id="current-password"
-                    type={showCurrentPw ? 'text' : 'password'}
-                    value={form.currentPassword}
-                    onChange={(e) => setForm((p) => ({ ...p, currentPassword: e.target.value }))}
-                    placeholder="Required to change password"
-                    autoComplete="current-password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    tabIndex={-1}
-                  >
-                    {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+                <Label htmlFor="profile-username">Username</Label>
+                <Input
+                  id="profile-username"
+                  value={form.username}
+                  onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                  placeholder="Enter username"
+                  autoComplete="username"
+                />
               </div>
 
-              {/* New password */}
+              {/* Email */}
               <div className="space-y-1.5">
-                <Label htmlFor="new-password">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="new-password"
-                    type={showNewPw ? 'text' : 'password'}
-                    value={form.newPassword}
-                    onChange={(e) => setForm((p) => ({ ...p, newPassword: e.target.value }))}
-                    placeholder="Min 6 characters"
-                    autoComplete="new-password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    tabIndex={-1}
-                  >
-                    {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <Label htmlFor="profile-email">Email</Label>
+                <Input
+                  id="profile-email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  placeholder="Enter email"
+                  autoComplete="email"
+                />
+              </div>
+
+              {/* Sidebar Logo + Preview */}
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-logo">Sidebar Logo</Label>
+                <Input
+                  id="profile-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const localUrl = URL.createObjectURL(file);
+                      setForm((p: any) => ({ ...p, logoFile: file, logoPreview: localUrl }));
+                    }
+                  }}
+                />
+                {((form as any).logoPreview || (form as any).logo_url) && (
+                  <div className="mt-2 p-2 border rounded bg-muted/30 flex items-center justify-center h-20">
+                    <img
+                      src={(form as any).logoPreview || (form as any).logo_url}
+                      alt="Logo Preview"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Site Favicon + Preview */}
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-favicon">Site Favicon</Label>
+                <Input
+                  id="profile-favicon"
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const localUrl = URL.createObjectURL(file);
+                      setForm((p: any) => ({ ...p, faviconFile: file, faviconPreview: localUrl }));
+                    }
+                  }}
+                />
+                {((form as any).faviconPreview || (form as any).favicon_url) && (
+                  <div className="mt-2 p-2 border rounded bg-muted/30 flex items-center justify-center h-20">
+                    <img
+                      src={(form as any).faviconPreview || (form as any).favicon_url}
+                      alt="Favicon Preview"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-4 space-y-3 md:col-span-2">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  Change Password (optional)
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Current password */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="current-password"
+                        type={showCurrentPw ? 'text' : 'password'}
+                        value={form.currentPassword}
+                        onChange={(e) => setForm((p) => ({ ...p, currentPassword: e.target.value }))}
+                        placeholder="Required to change password"
+                        autoComplete="current-password"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPw((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        tabIndex={-1}
+                      >
+                        {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* New password */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showNewPw ? 'text' : 'password'}
+                        value={form.newPassword}
+                        onChange={(e) => setForm((p) => ({ ...p, newPassword: e.target.value }))}
+                        placeholder="Min 6 characters"
+                        autoComplete="new-password"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPw((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        tabIndex={-1}
+                      >
+                        {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

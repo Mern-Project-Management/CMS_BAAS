@@ -26,6 +26,15 @@ export function IconRenderer({ icon, className = '' }: IconRendererProps) {
     return <Icon icon={icon} className={className} />;
   }
 
+  // Parse PascalCase Lucide icon names to kebab-case Iconify tags
+  if (/^[A-Z][a-zA-Z0-9]+$/.test(icon) && !icon.startsWith('Fa') && !icon.startsWith('Md')) {
+    const kebab = icon
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+      .toLowerCase();
+    return <Icon icon={`lucide:${kebab}`} className={className} />;
+  }
+
   // Render Emojis (single character or emoji)
   // Simplified check: if it's 1-2 characters, it's likely an emoji
   if (icon.length <= 2) {

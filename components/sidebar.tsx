@@ -62,7 +62,7 @@ export function Sidebar() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [colJson, folderJson, footerJson] = await Promise.all([
+        const [colJson, folderJson, footerJson, settingsJson] = await Promise.all([
           fetch('/api/collections')
             .then(res => res.ok ? res.json() : { success: false })
             .catch(() => ({ success: false })),
@@ -71,6 +71,9 @@ export function Sidebar() {
             .catch(() => ({ success: false })),
           fetch('/api/data/footer')
             .then(res => res.ok ? res.json() : { success: false })
+            .catch(() => ({ success: false })),
+          fetch('/api/settings')
+            .then(res => res.ok ? res.json() : { success: false })
             .catch(() => ({ success: false }))
         ]);
 
@@ -78,14 +81,26 @@ export function Sidebar() {
         if (folderJson.success) {
           setFolders(folderJson.data || []);
         }
-        if (footerJson.success && footerJson.data?.length > 0) {
+
+        // Apply settings brand assets first
+        let settingsLogo = settingsJson?.success ? settingsJson.data?.logo_url : null;
+        let settingsFavicon = settingsJson?.success ? settingsJson.data?.favicon_url : null;
+
+        if (settingsLogo) {
+          setLogoUrl(settingsLogo);
+        } else if (footerJson.success && footerJson.data?.length > 0) {
           const logo = footerJson.data[0]?.headerlogo?.[0];
           if (logo) {
             const formattedLogo = logo.startsWith('http')
               ? logo
-              : `https://admin.wiretex.rndtd.com${logo.startsWith('/') ? '' : '/'}${logo}`;
+              : `${process.env.NEXT_PUBLIC_API_URL}${logo.startsWith('/') ? '' : '/'}${logo}`;
             setLogoUrl(formattedLogo);
           }
+        }
+
+        if (settingsFavicon) {
+          setFaviconUrl(settingsFavicon);
+        } else if (footerJson.success && footerJson.data?.length > 0) {
           const favicon = footerJson.data[0]?.favicon?.[0];
           if (favicon) {
             const formattedFavicon = favicon.startsWith('http')

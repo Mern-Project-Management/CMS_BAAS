@@ -124,6 +124,7 @@ export function CreateCollectionDialog({ onSuccess, trigger }: CreateCollectionD
       toast({
         title: 'Success',
         description: 'Collection created successfully',
+        variant: 'success',
       });
 
       setFormData({

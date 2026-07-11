@@ -12,6 +12,23 @@ export interface GlobalSettings {
   smtp_user?: string;
   smtp_pass?: string;
   admin_email?: string;
+  logo_url?: string;
+  favicon_url?: string;
+}
+
+function updateEnvVariable(key: string, value: string) {
+  const envPath = path.resolve(process.cwd(), '.env');
+  let envContent = '';
+  if (fs.existsSync(envPath)) {
+    envContent = fs.readFileSync(envPath, 'utf8');
+  }
+  const regex = new RegExp(`^${key}\\s*=.*$`, 'm');
+  if (regex.test(envContent)) {
+    envContent = envContent.replace(regex, `${key}=${value}`);
+  } else {
+    envContent = envContent.trim() + `\n${key}=${value}\n`;
+  }
+  fs.writeFileSync(envPath, envContent);
 }
 
 export async function GET() {
@@ -30,14 +47,18 @@ export async function GET() {
     if (!settings.smtp_port) settings.smtp_port = 465;
     if (settings.smtp_secure === undefined) settings.smtp_secure = true;
     
-    // DB URI is always from process.env since changing it breaks the app connection
+    // Read env variables
     const dbUri = process.env.MONGODB_URI || '';
+    const dbName = process.env.MONGODB_DB || '';
+    const nextPublicApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     
     // Mask password in response if it exists
     const maskedSettings = {
       ...settings,
       smtp_pass: settings.smtp_pass ? '********' : '',
-      db_uri: dbUri
+      db_uri: dbUri,
+      db_name: dbName,
+      next_public_api_url: nextPublicApiUrl,
     };
 
     return NextResponse.json({ success: true, data: maskedSettings });
@@ -51,11 +72,11 @@ export async function POST(request: NextRequest) {
   try {
     await requireRole(['superadmin']);
     const body = await request.json();
-    const { db_uri, ...smtpSettings } = body;
+    const { db_uri, db_name, next_public_api_url, ...smtpSettings } = body;
 
     const db = await getDb();
     
-    // 1. Update SMTP settings in database
+    // 1. Update settings in database
     const currentSettings = await db.collection('settings').findOne({ type: 'global' });
     const existingData = currentSettings?.data || {};
     
@@ -76,27 +97,30 @@ export async function POST(request: NextRequest) {
       { upsert: true }
     );
 
-    // 2. Update DB URI in .env if it was changed
+    // 2. Update env variables if they have changed or are supplied
+    let envChanged = false;
     if (db_uri && db_uri !== process.env.MONGODB_URI) {
-      const envPath = path.resolve(process.cwd(), '.env');
-      let envContent = '';
-      if (fs.existsSync(envPath)) {
-        envContent = fs.readFileSync(envPath, 'utf8');
-      }
-      
-      const dbUriRegex = /^MONGODB_URI=.*$/m;
-      if (dbUriRegex.test(envContent)) {
-        envContent = envContent.replace(dbUriRegex, `MONGODB_URI=${db_uri}`);
-      } else {
-        envContent += `\nMONGODB_URI=${db_uri}\n`;
-      }
-      
-      fs.writeFileSync(envPath, envContent);
-      
-      // Note: Changing DB URI requires a server restart to take effect
+      updateEnvVariable('MONGODB_URI', db_uri);
+      envChanged = true;
+    }
+    if (db_name && db_name !== process.env.MONGODB_DB) {
+      updateEnvVariable('MONGODB_DB', db_name);
+      envChanged = true;
+    }
+    if (smtpSettings.smtp_user && smtpSettings.smtp_user !== process.env.SMTP_USER) {
+      updateEnvVariable('SMTP_USER', smtpSettings.smtp_user);
+    }
+    if (smtpSettings.smtp_pass && smtpSettings.smtp_pass !== existingData.smtp_pass && smtpSettings.smtp_pass !== '********') {
+      updateEnvVariable('SMTP_PASS', smtpSettings.smtp_pass);
+    }
+    if (next_public_api_url && next_public_api_url !== process.env.NEXT_PUBLIC_API_URL) {
+      updateEnvVariable('NEXT_PUBLIC_API_URL', next_public_api_url);
+    }
+
+    if (envChanged) {
       return NextResponse.json({ 
         success: true, 
-        message: 'Settings saved. Note: Database URI changes require a server restart to take effect.',
+        message: 'Settings saved. Note: Database configuration changes require a server restart to take effect.',
         requiresRestart: true
       });
     }

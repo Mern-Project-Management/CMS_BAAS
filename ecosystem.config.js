@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "cms-baas",
+      name: "ostech",
       script: "npm",
       args: "run start",
       instances: 1,

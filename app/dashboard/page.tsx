@@ -24,6 +24,7 @@ import {
 
 interface DashboardStats {
   counts: {
+    collections: number;
     products: number;
     blogs: number;
     careerLeads: number;
@@ -54,6 +55,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [colors, setColors] = useState<any>(null);
+  const [seeding, setSeeding] = useState(false);
 
   // Authentication guard
   useEffect(() => {
@@ -183,6 +185,102 @@ export default function DashboardPage() {
     month: 'long',
     day: 'numeric',
   });
+
+  const handleSeedDefaults = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/setup/seed-defaults', { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Seed failed');
+      toast({ title: 'Success', description: 'Default packages and database seeded!' });
+      window.dispatchEvent(new CustomEvent('sidebar:refresh'));
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: 'Seeding Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  // If there are no collections in the database, show the onboarding wizard
+  if (stats && stats.counts.collections === 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 space-y-8">
+        <div className="flex items-center gap-3">
+          <span className="p-3 bg-primary/10 text-primary rounded-xl ring-1 ring-primary/20 animate-pulse">
+            <Sparkles className="w-8 h-8" />
+          </span>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Welcome to CMS Builder!</h1>
+            <p className="text-muted-foreground mt-1">Let&apos;s get your workspace configured and ready.</p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Onboarding Checklist</CardTitle>
+              <CardDescription>Follow these steps to initialize your CMS database tables.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20">
+                <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">✓</span>
+                <div>
+                  <p className="font-semibold text-sm">Database Connected</p>
+                  <p className="text-xs text-muted-foreground">Your MongoDB connection is configured and active.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">Install Default Packages</p>
+                  <p className="text-xs text-muted-foreground mb-3">Install standard collection tables (our_products, blog, faq, and manage-meta) to populate fields instantly.</p>
+                  <Button onClick={handleSeedDefaults} disabled={seeding} className="gap-2">
+                    {seeding ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Seeding…
+                      </>
+                    ) : (
+                      'Install Default Packages'
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/10 opacity-60">
+                <span className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+                <div>
+                  <p className="font-semibold text-sm">Add custom schemas & records</p>
+                  <p className="text-xs text-muted-foreground">Build fields dynamically and feed content via tables.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Workspace Highlights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground">🎨 Color Manager</p>
+                <p className="text-xs">Tailor frontend theme variables dynamically to match your branding elements.</p>
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground">🔍 Dynamic SEO Rules</p>
+                <p className="text-xs">Tweak tab titles, descriptions and canonical schemas on the fly.</p>
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-foreground">📁 Public Upload Cleanups</p>
+                <p className="text-xs">Automatically unlinks and deletes local media items when deleted from collections.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

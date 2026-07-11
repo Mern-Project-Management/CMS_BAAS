@@ -76,6 +76,7 @@ export function PagesMetaTable({
   
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   // Edit Dialog States
   const [editRecord, setEditRecord] = useState<RecordRow | null>(null);
@@ -180,7 +181,7 @@ export function PagesMetaTable({
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Update failed');
       
-      toast({ title: 'SEO metadata updated successfully' });
+      toast({ title: 'SEO metadata updated successfully', variant: 'success' });
       setEditRecord(null);
       onUpdate();
     } catch (err: any) {
@@ -192,14 +193,14 @@ export function PagesMetaTable({
 
   // Delete Record
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this page meta rule?')) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/data/${collectionId}/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Delete failed');
-      toast({ title: 'Page SEO rule deleted' });
+      toast({ title: 'Page SEO rule deleted', variant: 'success' });
       onDelete();
+      setDeleteConfirmId(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -347,7 +348,7 @@ export function PagesMetaTable({
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            onClick={() => handleDelete(r.id)} 
+                            onClick={() => setDeleteConfirmId(r.id)} 
                             className="h-8 w-8 text-destructive hover:bg-destructive/10"
                             disabled={deletingId === r.id}
                             title="Delete SEO rule"
@@ -532,6 +533,44 @@ export function PagesMetaTable({
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* ── DELETE CONFIRMATION MODAL ── */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(o) => !o && setDeleteConfirmId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to permanently delete this page meta rule? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              disabled={deletingId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              disabled={deletingId !== null}
+              className="gap-1.5"
+            >
+              {deletingId !== null ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

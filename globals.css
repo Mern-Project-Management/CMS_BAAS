@@ -49,6 +49,8 @@ body {
     --sidebar-accent-foreground: 180 40% 20%;
     --sidebar-border: 180 15% 88%;
     --sidebar-ring: 180 63% 33%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
     
     /* Frontend CSS Variables (synced with SCSS) */
     --tj-color-common-white: #ffffff;

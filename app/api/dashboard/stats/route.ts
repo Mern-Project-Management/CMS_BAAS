@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const db = await getDb();
 
     // 2. Fetch counts
+    const collectionsCount = await db.collection('collections').countDocuments().catch(() => 0);
     const productsCount = await db.collection('our_products').countDocuments().catch(() => 0);
     const blogsCount = await db.collection('blog').countDocuments().catch(() => 0);
     const careerLeadsCount = await db.collection('career_applications').countDocuments().catch(() => 0);
@@ -60,6 +61,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         counts: {
+          collections: collectionsCount,
           products: productsCount,
           blogs: blogsCount,
           careerLeads: careerLeadsCount,

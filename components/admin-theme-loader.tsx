@@ -1,9 +1,37 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { hexToHslString, isLightColor } from '@/lib/color-utils';
 
 export function AdminThemeLoader() {
+  const pathname = usePathname();
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
+
+  // Fetch settings favicon on mount
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.ok ? res.json() : { success: false })
+      .then(json => {
+        if (json.success && json.data?.favicon_url) {
+          setFaviconUrl(json.data.favicon_url);
+        }
+      })
+      .catch(err => console.error('Failed to load dynamic favicon', err));
+  }, []);
+
+  // Enforce favicon link tag on path updates
+  useEffect(() => {
+    if (typeof window !== 'undefined' && faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = faviconUrl;
+    }
+  }, [faviconUrl, pathname]);
   useEffect(() => {
     // Function to map the stored colors (specifically the `admin` property) to the CSS variables
     const applyAdminColors = (colors: any) => {
@@ -53,6 +81,12 @@ export function AdminThemeLoader() {
       }
       if (admin.sidebarForeground) {
         root.style.setProperty('--sidebar-foreground', hexToHslString(admin.sidebarForeground));
+      }
+      if (admin.success) {
+        root.style.setProperty('--success', hexToHslString(admin.success));
+      }
+      if (admin.successForeground) {
+        root.style.setProperty('--success-foreground', hexToHslString(admin.successForeground));
       }
     };
 

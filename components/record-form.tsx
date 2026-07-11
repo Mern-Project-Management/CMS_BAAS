@@ -80,7 +80,7 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Failed to create record');
       }
-      toast({ title: 'Record created' });
+      toast({ title: 'Record created', variant: 'success' });
       setFormData({});
       setFormKey((prev) => prev + 1);
       onCreated();
