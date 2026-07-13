@@ -12,8 +12,16 @@ import { ColorField } from '@/components/color-field';
 import { useToast } from '@/hooks/use-toast';
 import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { PageRouteSelector } from '@/components/page-route-selector';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Field } from '@/lib/types';
+import { validateRecord } from '@/lib/validation-engine';
 
 const slugify = (str: string) =>
   str
@@ -71,6 +79,20 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
           payload[field.name] = v;
         }
       }
+      // Validate the record payload using field rules
+      const validation = validateRecord(payload, fields);
+      if (!validation.valid) {
+        validation.errors.forEach((err) => {
+          toast({
+            title: 'Validation Error',
+            description: err.message,
+            variant: 'destructive',
+          });
+        });
+        setSubmitting(false);
+        return;
+      }
+
       const res = await fetch(`/api/data/${collectionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -278,6 +300,26 @@ export function RecordForm({ collectionId, fields, onCreated }: Props) {
             fieldName={field.name}
           />
         );
+      case 'Dropdown': {
+        const options = Array.isArray(field.dropdown_options) ? field.dropdown_options : [];
+        return (
+          <Select
+            value={value || ''}
+            onValueChange={(val) => updateField(field.name, val)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={`Select ${field.display_name}...`} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
       default:
         return (
           <Input

@@ -43,6 +43,7 @@ import { TipTapEditor } from './tiptap-editor';
 import { ColorField, ColorSwatch } from './color-field';
 import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, AlertTriangle } from 'lucide-react';
 import type { Field } from '@/lib/types';
+import { validateRecord } from '@/lib/validation-engine';
 
 const slugify = (str: string) =>
   str
@@ -102,6 +103,12 @@ export function RecordsTable({
   const allFields = fields;
   
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => new Set(hiddenFields));
+
+  console.log('RecordsTable RENDER:', {
+    allFields: allFields.map(f => ({ name: f.name, id: f.id, display_name: f.display_name })),
+    hiddenCols: Array.from(hiddenCols),
+    shownFields: allFields.filter((f) => !hiddenCols.has(f.id)).map(f => f.name),
+  });
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -193,10 +200,38 @@ const extraKeys = records.length > 0
     if (!editRecord) return;
     setSaving(true);
     try {
+      // Normalize editData payload: filter out empty array items for Array/ImageArray fields
+      const payload: Record<string, any> = {};
+      fields.forEach((field) => {
+        const v = editData[field.name];
+        if (field.field_type === 'Array') {
+          const arr = Array.isArray(v) ? v : v ? [String(v)] : [];
+          payload[field.name] = arr.filter((s) => s.trim() !== '');
+        } else if (field.field_type === 'ImageArray') {
+          payload[field.name] = Array.isArray(v) ? v.filter(Boolean) : [];
+        } else {
+          payload[field.name] = v;
+        }
+      });
+
+      // Validate fields against rules
+      const validation = validateRecord(payload, fields);
+      if (!validation.valid) {
+        validation.errors.forEach((err) => {
+          toast({
+            title: 'Validation Error',
+            description: err.message,
+            variant: 'destructive',
+          });
+        });
+        setSaving(false);
+        return;
+      }
+
       const res = await fetch(`/api/data/${collectionId}/${editRecord.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editData),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Update failed');
@@ -381,6 +416,26 @@ const extraKeys = records.length > 0
             recordId={editRecord?.id}
           />
         );
+      case 'Dropdown': {
+        const options = Array.isArray(field.dropdown_options) ? field.dropdown_options : [];
+        return (
+          <Select
+            value={value || ''}
+            onValueChange={setValue}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={`Select ${field.display_name}...`} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
       default:
         return (
           <Input
@@ -950,6 +1005,10 @@ function renderViewValue(record: RecordRow, field: Field) {
   const value = record[field.name];
   if (value === undefined || value === null) return <span className="text-muted-foreground italic">—</span>;
 
+  if (field.is_encrypted) {
+    return <span className="text-xs text-muted-foreground font-mono">••••••••</span>;
+  }
+
   switch (field.field_type) {
     case 'Boolean':
       return (
@@ -1056,6 +1115,10 @@ function isRawObjectId(str: string): boolean {
 function formatValue(record: RecordRow, field: Field) {
   const value = record[field.name];
   if (value === undefined || value === null) return <span className="text-muted-foreground/50">—</span>;
+
+  if (field.is_encrypted) {
+    return <span className="text-xs text-muted-foreground font-mono">••••••••</span>;
+  }
 
   if (field.field_type === 'Relation') {
     const populated = record[`${field.name}_populated`];

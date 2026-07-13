@@ -11,6 +11,17 @@ export async function PATCH(
     await requireRole(['superadmin']);
     const { id } = await params;
     const body = await request.json();
+    console.log('[PATCH field] id:', id, 'body:', JSON.stringify(body));
+
+    if (body.name) {
+      const nameRegex = /^[a-z0-9_]+$/;
+      if (!nameRegex.test(body.name)) {
+        return NextResponse.json(
+          { success: false, error: 'Field Name must contain only lowercase letters, numbers, and underscores' } as ApiResponse<null>,
+          { status: 400 }
+        );
+      }
+    }
 
     const { data, error } = await updateField(id, body);
 

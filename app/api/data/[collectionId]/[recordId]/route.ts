@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteRecord, updateRecord, getCollection, getCollectionByName, getDb, oid } from '@/lib/db';
+import { deleteRecord, updateRecord, getCollection, getCollectionByName, getDb, oid, getCollectionFields } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import type { ApiResponse } from '@/lib/types';
+import { encryptValue } from '@/lib/encryption';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
@@ -72,6 +73,45 @@ export async function PATCH(
         { success: false, error } as ApiResponse<null>,
         { status: 404 }
       );
+    }
+
+    // Enforce unique constraints on fields during edit
+    let collectionDoc: any = null;
+    if (ObjectId.isValid(collectionId)) {
+      const { data } = await getCollection(collectionId);
+      collectionDoc = data;
+    } else {
+      const { data } = await getCollectionByName(collectionId);
+      collectionDoc = data;
+    }
+
+    if (collectionDoc) {
+      const { data: collectionFields } = await getCollectionFields(collectionDoc.id);
+      if (collectionFields) {
+        const db = await getDb();
+        for (const field of collectionFields) {
+          if (field.is_unique && payload[field.name] !== undefined && payload[field.name] !== null && payload[field.name] !== '') {
+            const query = { 
+              [field.name]: payload[field.name],
+              _id: { $ne: oid(recordId)! }
+            };
+            const existing = await db.collection(collectionName).findOne(query);
+            if (existing) {
+              return NextResponse.json(
+                { success: false, error: `${field.display_name} value must be unique. The value "${payload[field.name]}" already exists.` },
+                { status: 400 }
+              );
+            }
+          }
+        }
+
+        // Encrypt sensitive fields
+        for (const field of collectionFields) {
+          if (field.is_encrypted && payload[field.name] !== undefined && payload[field.name] !== null && payload[field.name] !== '') {
+            payload[field.name] = encryptValue(payload[field.name]);
+          }
+        }
+      }
     }
 
     // Retrieve the old document before editing it
