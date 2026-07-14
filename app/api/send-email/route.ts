@@ -23,6 +23,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 });
     }
 
+    // Validate that all template variables are provided
+    if (template.variables && Array.isArray(template.variables)) {
+      const vars = variableData || {};
+      const allFilled = template.variables.every(
+        (variable: string) => vars[variable] !== undefined && String(vars[variable]).trim() !== ''
+      );
+      if (!allFilled) {
+        return NextResponse.json({ success: false, error: 'All template variables are required.' }, { status: 400 });
+      }
+    }
+
     // Replace variables in subject and content
     let subject = template.subject;
     let htmlContent = template.html_content;
