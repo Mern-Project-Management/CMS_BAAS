@@ -202,7 +202,6 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
                   </div>
                 );
               })()}
-
             <div className="space-y-3">
               {Array.isArray(validationRules) && validationRules.map((rule, index) => (
                 <div key={index} className="flex items-end gap-2">
@@ -276,7 +275,6 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
                   <option value="json_ld">JSON-LD Schema (schema.org)</option>
                   <option value="custom">Custom</option>
                 </select>
-
                 {['min', 'max', 'length', 'pattern', 'custom'].includes(newRule.type || '') && (
                   <div className="space-y-1">
                     <Label className="text-xs">Rule Value</Label>
