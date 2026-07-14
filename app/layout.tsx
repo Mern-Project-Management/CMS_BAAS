@@ -7,6 +7,7 @@ import { Navbar } from '@/components/navbar'
 import { ClientSidebar } from '@/components/client-sidebar'
 import { AdminThemeLoader } from '@/components/admin-theme-loader'
 import { Toaster } from '@/components/ui/toaster'
+import { ChunkErrorListener } from '@/components/chunk-error-listener'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans h-screen overflow-hidden bg-background text-foreground`}>
+        <ChunkErrorListener />
         <AdminThemeLoader />
         <SidebarProvider>
           <div className="flex h-full overflow-hidden flex-col md:flex-row">
@@ -50,3 +52,4 @@ export default function RootLayout({
     </html>
   )
 }
+
