@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing recipient or template ID' }, { status: 400 });
     }
 
+    if (to.includes(';')) {
+      return NextResponse.json({ success: false, error: 'Use commas to separate multiple email addresses.' }, { status: 400 });
+    }
+
     const db = await getDb();
     let objectId;
     try { objectId = new ObjectId(templateId); } catch { return NextResponse.json({ success: false, error: 'Invalid template ID' }, { status: 400 }); }

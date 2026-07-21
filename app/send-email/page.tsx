@@ -57,6 +57,11 @@ export default function SendEmailPage() {
       return;
     }
 
+    if (to.includes(';')) {
+      toast({ title: 'Error', description: 'Use commas to separate multiple email addresses.', variant: 'destructive' });
+      return;
+    }
+
     const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
     if (selectedTemplate && selectedTemplate.variables) {
       const allFilled = selectedTemplate.variables.every(

@@ -77,6 +77,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (body.field_type === 'Dropdown' && Array.isArray(body.dropdown_options)) {
+      const hasInvalidChars = body.dropdown_options.some(opt => 
+        typeof opt === 'string' && /<[^>]*>/i.test(opt)
+      );
+      if (hasInvalidChars) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid characters detected in options' } as ApiResponse<null>,
+          { status: 400 }
+        );
+      }
+    }
+
     const { data, error } = await createField({
       collection_id: body.collection_id,
       name: body.name.toLowerCase().replace(/\s+/g, '_'),

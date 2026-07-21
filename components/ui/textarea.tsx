@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.ComponentProps<'textarea'>
->(({ className, ...props }, ref) => {
+>(({ className, onInvalid, onInput, ...props }, ref) => {
   return (
     <textarea
       className={cn(
@@ -13,6 +13,27 @@ const Textarea = React.forwardRef<
         className,
       )}
       ref={ref}
+      onInvalid={(e) => {
+        if (e.target instanceof HTMLTextAreaElement) {
+          const val = e.target.value;
+          if (val.length > 0 && val.trim().length === 0) {
+            e.target.setCustomValidity("Field cannot contain only whitespace.");
+          } else {
+            e.target.setCustomValidity("");
+          }
+        }
+        onInvalid?.(e);
+      }}
+      onInput={(e) => {
+        if (e.target instanceof HTMLTextAreaElement) {
+          e.target.setCustomValidity("");
+          const val = e.target.value;
+          if (val.length > 0 && val.trim().length === 0) {
+             e.target.setCustomValidity("Field cannot contain only whitespace.");
+          }
+        }
+        onInput?.(e);
+      }}
       {...props}
     />
   )
