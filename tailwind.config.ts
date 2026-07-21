@@ -91,12 +91,12 @@ const config: Config = {
         'toast-progress': {
           '0%': { transform: 'scaleX(1)' },
           '100%': { transform: 'scaleX(0)' },
-        }
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'toast-progress': 'toast-progress var(--toast-duration, 3000ms) linear forwards',
+        'toast-progress': 'toast-progress 5000ms linear forwards',
       },
     },
   },

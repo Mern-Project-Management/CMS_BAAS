@@ -81,6 +81,10 @@ export async function DELETE(request: NextRequest) {
 
     const db = await getDb();
     await db.collection('sidebar_folders').deleteOne({ _id: objectId });
+    await db.collection('collections').updateMany(
+      { folder_id: objectId },
+      { $set: { folder_id: null } }
+    );
 
     return NextResponse.json({ success: true, data: null } as ApiResponse<null>);
   } catch (error) {

@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing recipient or template ID' }, { status: 400 });
     }
 
+    if (to.includes(';')) {
+      return NextResponse.json({ success: false, error: 'Use commas to separate multiple email addresses.' }, { status: 400 });
+    }
+
     const db = await getDb();
     let objectId;
     try { objectId = new ObjectId(templateId); } catch { return NextResponse.json({ success: false, error: 'Invalid template ID' }, { status: 400 }); }
@@ -21,17 +25,6 @@ export async function POST(request: NextRequest) {
     const template = await db.collection('email_templates').findOne({ _id: objectId });
     if (!template) {
       return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 });
-    }
-
-    // Validate that all template variables are provided
-    if (template.variables && Array.isArray(template.variables)) {
-      const vars = variableData || {};
-      const allFilled = template.variables.every(
-        (variable: string) => vars[variable] !== undefined && String(vars[variable]).trim() !== ''
-      );
-      if (!allFilled) {
-        return NextResponse.json({ success: false, error: 'All template variables are required.' }, { status: 400 });
-      }
     }
 
     // Replace variables in subject and content

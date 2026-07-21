@@ -6,7 +6,7 @@ export type FieldRule = 'Required' | 'Unique' | 'Encrypted' | 'Validation';
 
 // Validation Rule Types
 export interface ValidationRule {
-  type: 'min' | 'max' | 'pattern' | 'length' | 'email' | 'url' | 'custom' | 'alphanumeric' | 'no_script_tags' | 'json_ld' | 'slug';
+  type: 'min' | 'max' | 'pattern' | 'length' | 'email' | 'url' | 'custom';
   value?: string | number;
   message?: string;
 }

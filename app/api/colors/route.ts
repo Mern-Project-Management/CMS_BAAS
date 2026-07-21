@@ -8,7 +8,7 @@ import type { ApiResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-const COLORS_FILE = join(process.cwd(), '..', 'bexon', 'src', 'app', 'assets', 'sass', 'utilities', '_colors.scss');
+const COLORS_FILE = join(process.cwd(), '..', 'OSTECH_WEB', 'src', 'app', 'assets', 'sass', 'utilities', '_colors.scss');
 
 // Color palette structure
 interface ColorPalette {
@@ -20,6 +20,7 @@ interface ColorPalette {
     body3: string;
     body4: string;
     body5: string;
+    body6: string;
   };
   theme: {
     primary: string;
@@ -51,6 +52,7 @@ const defaultColors: ColorPalette = {
     body3: '#67787a',
     body4: '#18292c',
     body5: '#ffffffcc',
+    body6: '#ffffff',
   },
   theme: {
     primary: '#1e8a8a',
@@ -112,12 +114,14 @@ function parseScssColors(content: string): ColorPalette {
     const body3Match = textContent.match(/body-3:\s*#([0-9a-fA-F]+)/);
     const body4Match = textContent.match(/body-4:\s*#([0-9a-fA-F]+)/);
     const body5Match = textContent.match(/body-5:\s*#([0-9a-fA-F]+)/);
+    const body6Match = textContent.match(/body-6:\s*#([0-9a-fA-F]+)/);
     colors.text = {
       body: bodyMatch ? `#${bodyMatch[1]}` : '#364e52',
       body2: body2Match ? `#${body2Match[1]}` : '#a9b8b8',
       body3: body3Match ? `#${body3Match[1]}` : '#67787a',
       body4: body4Match ? `#${body4Match[1]}` : '#18292c',
       body5: body5Match ? `#${body5Match[1]}` : '#ffffffcc',
+      body6: body6Match ? `#${body6Match[1]}` : '#ffffff',
     };
   }
   
@@ -200,6 +204,7 @@ function generateScssContent(colors: ColorPalette): string {
     body-3: ${formatColor(colors.text.body3)},
     body-4: ${formatColor(colors.text.body4)},
     body-5: ${formatColor(colors.text.body5)},
+    body-6: ${formatColor(colors.text.body6)},
   ),
   theme: (
     primary: ${formatColor(colors.theme.primary)},

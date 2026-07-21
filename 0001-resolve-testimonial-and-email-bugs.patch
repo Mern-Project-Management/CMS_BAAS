@@ -1,0 +1,252 @@
+From c553bde9bfd6c1c5aca89d6a77fc7a7520e2f543 Mon Sep 17 00:00:00 2001
+From: harshitdhodi <harshit.dhodi2108@gmail.com>
+Date: Tue, 21 Jul 2026 09:27:42 +0530
+Subject: [PATCH] resolve testimonial and email bugs
+
+---
+ app/api/email-templates/route.ts | 30 ++++++++++++++++++++++++++++++
+ app/api/fields/[id]/route.ts     | 12 ++++++++++++
+ app/api/fields/route.ts          | 12 ++++++++++++
+ app/api/send-email/route.ts      |  4 ++++
+ app/send-email/page.tsx          |  5 +++++
+ components/ui/input.tsx          | 23 ++++++++++++++++++++++-
+ components/ui/textarea.tsx       | 23 ++++++++++++++++++++++-
+ lib/validation-engine.ts         | 15 ++++++++++-----
+ 8 files changed, 117 insertions(+), 7 deletions(-)
+
+diff --git a/app/api/email-templates/route.ts b/app/api/email-templates/route.ts
+index 3cb6540..babf85e 100644
+--- a/app/api/email-templates/route.ts
++++ b/app/api/email-templates/route.ts
+@@ -240,6 +240,18 @@ export async function POST(request: NextRequest) {
+       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+     }
+ 
++    const definedVars = body.variables || [];
++    const combined = body.subject + ' ' + body.html_content;
++    const matches = combined.match(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g);
++    if (matches) {
++      for (const match of matches) {
++        const varName = match.replace(/\{\{|\}\}/g, '').trim();
++        if (!definedVars.includes(varName)) {
++          return NextResponse.json({ success: false, error: `Variable {{${varName}}} is not defined.` }, { status: 400 });
++        }
++      }
++    }
++
+     const db = await getDb();
+     const result = await db.collection('email_templates').insertOne({
+       name: body.name,
+@@ -271,6 +283,24 @@ export async function PUT(request: NextRequest) {
+     let objectId;
+     try { objectId = new ObjectId(id); } catch { return NextResponse.json({ success: false, error: 'Invalid ID' }, { status: 400 }); }
+ 
++    const existingTemplate = await db.collection('email_templates').findOne({ _id: objectId });
++    if (!existingTemplate) return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 });
++
++    const finalSubject = updateData.subject !== undefined ? updateData.subject : existingTemplate.subject;
++    const finalHtml = updateData.html_content !== undefined ? updateData.html_content : existingTemplate.html_content;
++    const finalVars = updateData.variables !== undefined ? updateData.variables : existingTemplate.variables || [];
++
++    const combined = finalSubject + ' ' + finalHtml;
++    const matches = combined.match(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g);
++    if (matches) {
++      for (const match of matches) {
++        const varName = match.replace(/\{\{|\}\}/g, '').trim();
++        if (!finalVars.includes(varName)) {
++          return NextResponse.json({ success: false, error: `Variable {{${varName}}} is not defined.` }, { status: 400 });
++        }
++      }
++    }
++
+     // Remove immutable fields from update
+     delete updateData._id;
+     delete updateData.is_default;
+diff --git a/app/api/fields/[id]/route.ts b/app/api/fields/[id]/route.ts
+index c6d99b3..ceff34e 100644
+--- a/app/api/fields/[id]/route.ts
++++ b/app/api/fields/[id]/route.ts
+@@ -23,6 +23,18 @@ export async function PATCH(
+       }
+     }
+ 
++    if (Array.isArray(body.dropdown_options)) {
++      const hasInvalidChars = body.dropdown_options.some(opt => 
++        typeof opt === 'string' && /<[^>]*>/i.test(opt)
++      );
++      if (hasInvalidChars) {
++        return NextResponse.json(
++          { success: false, error: 'Invalid characters detected in options' } as ApiResponse<null>,
++          { status: 400 }
++        );
++      }
++    }
++
+     const { data, error } = await updateField(id, body);
+ 
+     if (error) {
+diff --git a/app/api/fields/route.ts b/app/api/fields/route.ts
+index 81cda65..12cd8e0 100644
+--- a/app/api/fields/route.ts
++++ b/app/api/fields/route.ts
+@@ -77,6 +77,18 @@ export async function POST(request: NextRequest) {
+       );
+     }
+ 
++    if (body.field_type === 'Dropdown' && Array.isArray(body.dropdown_options)) {
++      const hasInvalidChars = body.dropdown_options.some(opt => 
++        typeof opt === 'string' && /<[^>]*>/i.test(opt)
++      );
++      if (hasInvalidChars) {
++        return NextResponse.json(
++          { success: false, error: 'Invalid characters detected in options' } as ApiResponse<null>,
++          { status: 400 }
++        );
++      }
++    }
++
+     const { data, error } = await createField({
+       collection_id: body.collection_id,
+       name: body.name.toLowerCase().replace(/\s+/g, '_'),
+diff --git a/app/api/send-email/route.ts b/app/api/send-email/route.ts
+index 35d1607..9f5971b 100644
+--- a/app/api/send-email/route.ts
++++ b/app/api/send-email/route.ts
+@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
+       return NextResponse.json({ success: false, error: 'Missing recipient or template ID' }, { status: 400 });
+     }
+ 
++    if (to.includes(';')) {
++      return NextResponse.json({ success: false, error: 'Use commas to separate multiple email addresses.' }, { status: 400 });
++    }
++
+     const db = await getDb();
+     let objectId;
+     try { objectId = new ObjectId(templateId); } catch { return NextResponse.json({ success: false, error: 'Invalid template ID' }, { status: 400 }); }
+diff --git a/app/send-email/page.tsx b/app/send-email/page.tsx
+index aa808ed..0b4b4f7 100644
+--- a/app/send-email/page.tsx
++++ b/app/send-email/page.tsx
+@@ -57,6 +57,11 @@ export default function SendEmailPage() {
+       return;
+     }
+ 
++    if (to.includes(';')) {
++      toast({ title: 'Error', description: 'Use commas to separate multiple email addresses.', variant: 'destructive' });
++      return;
++    }
++
+     const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+     if (selectedTemplate && selectedTemplate.variables) {
+       const allFilled = selectedTemplate.variables.every(
+diff --git a/components/ui/input.tsx b/components/ui/input.tsx
+index b508d5a..ca36ced 100644
+--- a/components/ui/input.tsx
++++ b/components/ui/input.tsx
+@@ -3,7 +3,7 @@ import * as React from 'react'
+ import { cn } from '@/lib/utils'
+ 
+ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
+-  ({ className, type, ...props }, ref) => {
++  ({ className, type, onInvalid, onInput, ...props }, ref) => {
+     return (
+       <input
+         type={type}
+@@ -12,6 +12,27 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
+           className,
+         )}
+         ref={ref}
++        onInvalid={(e) => {
++          if (e.target instanceof HTMLInputElement) {
++            const val = e.target.value;
++            if (val.length > 0 && val.trim().length === 0) {
++              e.target.setCustomValidity("Field cannot contain only whitespace.");
++            } else {
++              e.target.setCustomValidity("");
++            }
++          }
++          onInvalid?.(e);
++        }}
++        onInput={(e) => {
++          if (e.target instanceof HTMLInputElement) {
++            e.target.setCustomValidity("");
++            const val = e.target.value;
++            if (val.length > 0 && val.trim().length === 0) {
++               e.target.setCustomValidity("Field cannot contain only whitespace.");
++            }
++          }
++          onInput?.(e);
++        }}
+         {...props}
+       />
+     )
+diff --git a/components/ui/textarea.tsx b/components/ui/textarea.tsx
+index 0960463..f0937bc 100644
+--- a/components/ui/textarea.tsx
++++ b/components/ui/textarea.tsx
+@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
+ const Textarea = React.forwardRef<
+   HTMLTextAreaElement,
+   React.ComponentProps<'textarea'>
+->(({ className, ...props }, ref) => {
++>(({ className, onInvalid, onInput, ...props }, ref) => {
+   return (
+     <textarea
+       className={cn(
+@@ -13,6 +13,27 @@ const Textarea = React.forwardRef<
+         className,
+       )}
+       ref={ref}
++      onInvalid={(e) => {
++        if (e.target instanceof HTMLTextAreaElement) {
++          const val = e.target.value;
++          if (val.length > 0 && val.trim().length === 0) {
++            e.target.setCustomValidity("Field cannot contain only whitespace.");
++          } else {
++            e.target.setCustomValidity("");
++          }
++        }
++        onInvalid?.(e);
++      }}
++      onInput={(e) => {
++        if (e.target instanceof HTMLTextAreaElement) {
++          e.target.setCustomValidity("");
++          const val = e.target.value;
++          if (val.length > 0 && val.trim().length === 0) {
++             e.target.setCustomValidity("Field cannot contain only whitespace.");
++          }
++        }
++        onInput?.(e);
++      }}
+       {...props}
+     />
+   )
+diff --git a/lib/validation-engine.ts b/lib/validation-engine.ts
+index 5513367..f6e6292 100644
+--- a/lib/validation-engine.ts
++++ b/lib/validation-engine.ts
+@@ -22,11 +22,16 @@ export function validateFieldValue(
+ 
+   let isEmpty = value === null || value === undefined || value === '';
+ 
+-  // If it's an editor field, strip HTML tags to check if it's actually empty
+-  if (!isEmpty && field.field_type === 'Editor' && typeof value === 'string') {
+-    const stripped = value.replace(/<[^>]*>/g, '').trim();
+-    if (stripped === '') {
+-      isEmpty = true;
++  if (!isEmpty && typeof value === 'string') {
++    if (field.field_type === 'Editor') {
++      const stripped = value.replace(/<[^>]*>/g, '').trim();
++      if (stripped === '') {
++        isEmpty = true;
++      }
++    } else {
++      if (value.trim() === '') {
++        isEmpty = true;
++      }
+     }
+   }
+ 
+-- 
+2.47.0.windows.2
+

@@ -3,7 +3,7 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onInvalid, onInput, ...props }, ref) => {
     return (
       <input
         type={type}
@@ -12,6 +12,27 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
           className,
         )}
         ref={ref}
+        onInvalid={(e) => {
+          if (e.target instanceof HTMLInputElement) {
+            const val = e.target.value;
+            if (val.length > 0 && val.trim().length === 0) {
+              e.target.setCustomValidity("Field cannot contain only whitespace.");
+            } else {
+              e.target.setCustomValidity("");
+            }
+          }
+          onInvalid?.(e);
+        }}
+        onInput={(e) => {
+          if (e.target instanceof HTMLInputElement) {
+            e.target.setCustomValidity("");
+            const val = e.target.value;
+            if (val.length > 0 && val.trim().length === 0) {
+               e.target.setCustomValidity("Field cannot contain only whitespace.");
+            }
+          }
+          onInput?.(e);
+        }}
         {...props}
       />
     )

@@ -244,7 +244,6 @@ export async function createField(field: {
   default_value?: string;
   field_order?: number;
   relation_to_collection?: string;
-  dropdown_options?: string[];
 }) {
   try {
     const db = await getDb();
@@ -336,33 +335,6 @@ export async function deleteField(id: string) {
 
     const db = await getDb();
     const fieldsCol = db.collection('fields');
-
-    // Fetch field document to get its name and collection ID
-    const fieldDoc = await fieldsCol.findOne({ _id });
-    if (!fieldDoc) return { error: new Error('Field not found') };
-
-    const collectionsCol = db.collection('collections');
-    const collectionDoc = await collectionsCol.findOne({ _id: oid(fieldDoc.collection_id) });
-    if (collectionDoc) {
-      const collectionName = collectionDoc.name;
-      const fieldName = fieldDoc.name;
-
-      // 1. Unset this field name from all documents in that collection
-      await db.collection(collectionName).updateMany(
-        {},
-        { $unset: { [fieldName]: "" } }
-      );
-      console.log(`Unset field "${fieldName}" from all records in collection "${collectionName}"`);
-
-      // 2. Remove field ID from collection's hidden_fields metadata
-      if (Array.isArray(collectionDoc.hidden_fields)) {
-        const updatedHiddenFields = collectionDoc.hidden_fields.filter((hId: any) => String(hId) !== id);
-        await collectionsCol.updateOne(
-          { _id: collectionDoc._id },
-          { $set: { hidden_fields: updatedHiddenFields } }
-        );
-      }
-    }
 
     await fieldsCol.deleteOne({ _id });
     return { error: null as null };

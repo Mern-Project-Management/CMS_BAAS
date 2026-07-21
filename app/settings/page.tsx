@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Mail, Database, Server } from 'lucide-react';
+import { Loader2, Save, Database, Server, Settings } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -112,17 +112,18 @@ export default function SettingsPage() {
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Global Settings</h1>
-        <p className="text-muted-foreground">Manage your database connection and email server configuration.</p>
+        <p className="text-muted-foreground">Manage your database connection, environment variables, and email configuration.</p>
       </div>
 
+      {/* Database Configuration */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="w-5 h-5" />
+            <Database className="w-5 h-5 text-primary" />
             Database Configuration
           </CardTitle>
           <CardDescription>
-            Configure your MongoDB connection. Changing this requires a server restart.
+            Configure your MongoDB connection parameters. Changing these requires a server restart to load the new config.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -136,36 +137,53 @@ export default function SettingsPage() {
                 onChange={handleChange}
                 placeholder="mongodb+srv://..."
               />
-              <p className="text-xs text-muted-foreground mt-1">Warning: Invalid URI will break the admin panel.</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="db_name">Database Name (db_name)</Label>
+              <Label htmlFor="db_name">MongoDB Database Name</Label>
               <Input 
                 id="db_name"
                 name="db_name"
                 value={formData.db_name}
                 onChange={handleChange}
-                placeholder="manufacturing"
+                placeholder="ostech"
               />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">Warning: Invalid connection parameters will break access to the database.</p>
+        </CardContent>
+      </Card>
+
+      {/* Application Endpoint Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-primary" />
+            Application Configuration
+          </CardTitle>
+          <CardDescription>
+            Configure the public endpoint URL used by Next.js components.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="next_public_api_url">API Endpoint URL (next_public_api_url)</Label>
+            <Label htmlFor="next_public_api_url">Next Public API URL (NEXT_PUBLIC_API_URL)</Label>
             <Input 
               id="next_public_api_url"
               name="next_public_api_url"
               value={formData.next_public_api_url}
               onChange={handleChange}
-              placeholder="http://localhost:3000"
+              placeholder="http://localhost:3032"
             />
+            <p className="text-xs text-muted-foreground mt-1">The base endpoint URL of your API server.</p>
           </div>
         </CardContent>
       </Card>
 
+      {/* SMTP Email Configuration */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Server className="w-5 h-5" />
+            <Server className="w-5 h-5 text-primary" />
             SMTP Email Configuration
           </CardTitle>
           <CardDescription>

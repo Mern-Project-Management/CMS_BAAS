@@ -5,89 +5,51 @@ import { getDb } from '@/lib/db';
 // When no DB record exists, these are the defaults (all active)
 const PAGE_DEFAULTS: Record<string, Array<{ key: string; label: string; order: number }>> = {
   'home-02': [
-    { key: 'Hero2',              label: 'Hero Banner',    order: 1  },
-    { key: 'About9',             label: 'About',          order: 2  },
-    { key: 'Portfolios5',        label: 'Category',       order: 3  },
-    { key: 'Services9Wrapper',   label: 'Service',        order: 4  },
-    { key: 'Services3',          label: 'Why Choose Us',  order: 5  },
-    { key: 'Portfolios6Wrapper', label: 'industry',       order: 6  },
-    { key: 'Brands4',            label: 'Clients',        order: 7  },
-    { key: 'Contact2',           label: 'Global Presence', order: 8 },
-    { key: 'Team1',              label: 'cirtificate',    order: 9  },
-    { key: 'Testimonials6',      label: 'testimonials',   order: 10 },
-    { key: 'Testimonials4',      label: 'cta',            order: 11 },
+    { key: 'Hero Banner', label: 'Hero Banner', order: 1 },
+    { key: 'About', label: 'About', order: 2 },
+    { key: 'Category', label: 'Category', order: 3 },
+    { key: 'popular_products', label: 'popular_products', order: 4 },
+    { key: 'Clients', label: 'Clients', order: 5 },
+    { key: 'Global Presence', label: 'Global Presence', order: 6 },
+    { key: 'testimonials', label: 'testimonials', order: 7 },
+    { key: 'cta_form', label: 'cta_form', order: 8 },
+    { key: 'FAQ', label: 'FAQ', order: 9 },
   ],
   'about-us': [
-    { key: 'About9',     label: 'Company Overview',   order: 1 },
-    { key: 'Features',   label: 'Our Mission & Vision', order: 2 },
-    { key: 'Process',    label: 'Our History',         order: 3 },
-    { key: 'Team2',      label: 'Leadership Team',     order: 4 },
-    { key: 'Services4',  label: 'Infrastructure',      order: 5 },
-    { key: 'Team1',      label: 'Certificates',        order: 6 },
-    { key: 'Services3',  label: 'Why Choose Us',       order: 7 },
-    { key: 'Cta',        label: 'CTA',                 order: 8 },
+    { key: 'About9', label: 'Company Overview', order: 1 },
+    { key: 'mossion_vision', label: 'Our Mission & Vision', order: 2 },
+    { key: 'core-value', label: 'Core Value', order: 3 },
+    { key: 'Cta', label: 'CTA', order: 4 },
   ],
   'blogs': [
     { key: 'BlogsGridISR', label: 'Blogs Grid', order: 1 },
   ],
-  'careers': [
-    { key: 'Careers1', label: 'Careers List', order: 1 },
-    { key: 'Cta',      label: 'CTA',          order: 2 },
-  ],
   'contact': [
     { key: 'ContactTop', label: 'Contact Top', order: 1 },
-    { key: 'Contact3',   label: 'Contact Form', order: 2 },
-    { key: 'Cta',        label: 'CTA',          order: 3 },
-  ],
-  'events': [
-    { key: 'EventsSection', label: 'Events List', order: 1 },
-    { key: 'Gallery',       label: 'Image Gallery', order: 2 },
+    { key: 'Contact3', label: 'Contact Form', order: 2 },
+    { key: 'Cta', label: 'CTA', order: 3 },
   ],
   'downloads': [
     { key: 'DownloadCenter', label: 'Download Center', order: 1 },
   ],
-  'faq': [
-    { key: 'Faq2', label: 'FAQ Accordion 1', order: 1 },
-    { key: 'Faq3', label: 'FAQ Accordion 2', order: 2 },
-    { key: 'Cta',  label: 'CTA',             order: 3 },
-  ],
-  'global-presence': [
-    { key: 'Contact2',  label: 'Contact Section', order: 1 },
-    { key: 'Team3',     label: 'Our Team', order: 2 },
-    { key: 'Team1',     label: 'Certificates', order: 3 },
-  ],
-  'industry-solutions': [
-    { key: 'Services10',   label: 'Our Solutions', order: 1 },
-    { key: 'Portfolios10', label: 'Latest Projects', order: 2 },
-  ],
-  'manufacturing-infrastructure': [
-    { key: 'Portfolios4',          label: 'Machinery & Equipment', order: 1 },
-    { key: 'ManufacturingProcess', label: 'Manufacturing Process', order: 2 },
-    { key: 'Services5',            label: 'Quality Control Process', order: 3 },
-    { key: 'About6',               label: 'Production Capacity', order: 4 },
-    { key: 'Portfolios1',          label: 'Factory Images', order: 5 },
-    { key: 'Services8',            label: 'Safety Standards', order: 6 },
-  ],
+
+
   'products': [
-    { key: 'PortfoliosPrimary', label: 'Products Grid', order: 1 },
-    { key: 'Cta',               label: 'CTA', order: 2 },
+    { key: 'CategoriesGrid', label: 'Products Grid', order: 1 },
+    { key: 'Cta', label: 'CTA', order: 2 },
   ],
-  'quality-certification': [
-    { key: 'Features', label: 'Our Mission & Vision', order: 1 },
-    { key: 'Process2', label: 'Our Process', order: 2 },
-    { key: 'Team1',    label: 'Certificates', order: 3 },
-  ],
-  'services': [
-    { key: 'ServicesPrimary', label: 'Services Grid', order: 1 },
-    { key: 'Cta',             label: 'CTA', order: 2 },
-  ],
-  'team': [
-    { key: 'Team1', label: 'Team Grid', order: 1 },
-    { key: 'Cta',   label: 'CTA', order: 2 },
-  ],
+
   'terms-and-conditions': [
     { key: 'TermsAndConditionsPrimary', label: 'Terms and Conditions Text', order: 1 },
-    { key: 'Cta',                       label: 'CTA', order: 2 },
+    { key: 'Cta', label: 'CTA', order: 2 },
+  ],
+  'our-capabilities': [
+    { key: 'OurStrength', label: 'Our Strength', order: 1 },
+    { key: 'OurServices', label: 'Our Services', order: 2 },
+    { key: 'Process', label: 'Process', order: 3 },
+  ],
+  'categories': [
+    { key: 'CategoriesGrid', label: 'Categories Grid', order: 1 },
   ],
 };
 

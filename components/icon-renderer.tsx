@@ -26,7 +26,8 @@ export function IconRenderer({ icon, className = '' }: IconRendererProps) {
     return <Icon icon={icon} className={className} />;
   }
 
-  // Parse PascalCase Lucide icon names to kebab-case Iconify tags
+  // Convert PascalCase Lucide icons to kebab-case Iconify format
+  // e.g. "ShoppingBag" -> "lucide:shopping-bag"
   if (/^[A-Z][a-zA-Z0-9]+$/.test(icon) && !icon.startsWith('Fa') && !icon.startsWith('Md')) {
     const kebab = icon
       .replace(/([a-z0-9])([A-Z])/g, '$1-$2')

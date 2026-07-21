@@ -85,7 +85,7 @@ export function CollectionsList({
       const newTotalPages = Math.max(1, Math.ceil(updated.length / pageSize));
       if (currentPage > newTotalPages) setCurrentPage(newTotalPages);
 
-      toast({ title: 'Success', description: 'Collection deleted successfully', variant: 'success' });
+      toast({ title: 'Success', description: 'Collection deleted successfully' });
       onDelete?.();
     } catch (error) {
       toast({

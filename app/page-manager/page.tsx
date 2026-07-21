@@ -45,17 +45,12 @@ const PAGES: Array<{ key: string; label: string; description: string }> = [
   { key: 'home-02', label: 'Home Page', description: 'Main landing page components' },
   { key: 'about-us', label: 'About Us', description: 'About page sections' },
   { key: 'blogs', label: 'Blogs', description: 'Blogs page sections' },
-  { key: 'careers', label: 'Careers', description: 'Careers page sections' },
   { key: 'contact', label: 'Contact', description: 'Contact page sections' },
-  { key: 'events', label: 'Our Events', description: 'Our Events page sections' },
   { key: 'downloads', label: 'Our Resources', description: 'Our Resources page sections' },
-  { key: 'global-presence', label: 'Global Presence', description: 'Global presence page sections' },
-  { key: 'industry-solutions', label: 'Industry Solutions', description: 'Industry solutions page sections' },
-  { key: 'manufacturing-infrastructure', label: 'Manufacturing Infrastructure', description: 'Manufacturing infrastructure page sections' },
   { key: 'products', label: 'Products', description: 'Products page sections' },
-  { key: 'quality-certification', label: 'Quality Certification', description: 'Quality certification page sections' },
-  { key: 'services', label: 'Services', description: 'Services page sections' },
   { key: 'terms-and-conditions', label: 'Terms and Conditions', description: 'Terms and conditions page sections' },
+  { key: 'categories', label: 'Categories', description: 'Categories page sections' },
+  { key: 'our-capabilities', label: 'Our Capabilities', description: 'Our Capabilities page sections' },
 ];
 
 interface PageVisibility {

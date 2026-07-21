@@ -147,7 +147,7 @@ export function EditCollectionDialog({
         throw new Error(result.error || 'Failed to update collection');
       }
 
-      toast({ title: 'Success', description: 'Collection updated successfully', variant: 'success' });
+      toast({ title: 'Success', description: 'Collection updated successfully' });
       onOpenChange(false);
       if (onSuccess && result.data) onSuccess(result.data);
     } catch (error) {

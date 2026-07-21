@@ -8,19 +8,23 @@ export function AdminThemeLoader() {
   const pathname = usePathname();
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
 
-  // Fetch settings favicon on mount
+  // Fetch favicon once on mount
   useEffect(() => {
     fetch('/api/settings')
-      .then(res => res.ok ? res.json() : { success: false })
+      .then(res => res.json())
       .then(json => {
         if (json.success && json.data?.favicon_url) {
-          setFaviconUrl(json.data.favicon_url);
+          const favicon = json.data.favicon_url;
+          const formattedFavicon = favicon.startsWith('http')
+            ? favicon
+            : `${favicon.startsWith('/') ? '' : '/'}${favicon}`;
+          setFaviconUrl(formattedFavicon);
         }
       })
-      .catch(err => console.error('Failed to load dynamic favicon', err));
+      .catch(err => console.error('Failed to fetch settings favicon', err));
   }, []);
 
-  // Enforce favicon link tag on path updates
+  // Re-apply favicon on every pathname change to prevent Next.js client-side reset
   useEffect(() => {
     if (typeof window !== 'undefined' && faviconUrl) {
       let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
@@ -32,6 +36,7 @@ export function AdminThemeLoader() {
       link.href = faviconUrl;
     }
   }, [faviconUrl, pathname]);
+
   useEffect(() => {
     // Function to map the stored colors (specifically the `admin` property) to the CSS variables
     const applyAdminColors = (colors: any) => {
@@ -76,17 +81,17 @@ export function AdminThemeLoader() {
         root.style.setProperty('--input', hexToHslString(admin.border));
         root.style.setProperty('--sidebar-border', hexToHslString(admin.border));
       }
-      if (admin.sidebarBackground) {
-        root.style.setProperty('--sidebar-background', hexToHslString(admin.sidebarBackground));
-      }
-      if (admin.sidebarForeground) {
-        root.style.setProperty('--sidebar-foreground', hexToHslString(admin.sidebarForeground));
-      }
       if (admin.success) {
         root.style.setProperty('--success', hexToHslString(admin.success));
       }
       if (admin.successForeground) {
         root.style.setProperty('--success-foreground', hexToHslString(admin.successForeground));
+      }
+      if (admin.sidebarBackground) {
+        root.style.setProperty('--sidebar-background', hexToHslString(admin.sidebarBackground));
+      }
+      if (admin.sidebarForeground) {
+        root.style.setProperty('--sidebar-foreground', hexToHslString(admin.sidebarForeground));
       }
     };
 

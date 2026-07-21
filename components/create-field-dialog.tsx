@@ -37,7 +37,6 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [dropdownOptionsText, setDropdownOptionsText] = useState('');
   const [formData, setFormData] = useState<Partial<Field>>({
     collection_id: collectionId,
     name: '',
@@ -68,7 +67,6 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
   useEffect(() => {
     if (formData.field_type !== 'Dropdown') {
       setFormData(prev => ({ ...prev, dropdown_options: [] }));
-      setDropdownOptionsText('');
     }
   }, [formData.field_type]);
 
@@ -91,11 +89,6 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
     try {
       if (!formData.name || !formData.display_name) {
         throw new Error('Name and display name are required');
-      }
-
-      const nameRegex = /^[a-z0-9_]+$/;
-      if (!nameRegex.test(formData.name)) {
-        throw new Error('Field Name must contain only lowercase letters, numbers, and underscores');
       }
 
       const response = await fetch('/api/fields', {
@@ -131,7 +124,6 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
         relation_to_collection: '',
         dropdown_options: [],
       });
-      setDropdownOptionsText('');
       setOpen(false);
 
       if (onSuccess && result.data) {
@@ -239,13 +231,11 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
             <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
               <Label>Dropdown Options</Label>
               <Textarea
-                placeholder="Option 1, Option 2, Option 3 (or one per line)"
-                value={dropdownOptionsText}
+                placeholder="Option 1, Option 2, Option 3"
+                value={Array.isArray(formData.dropdown_options) ? formData.dropdown_options.join(', ') : ''}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  setDropdownOptionsText(val);
-                  const options = val
-                    .split(/[,\n]+/)
+                  const options = e.target.value
+                    .split(',')
                     .map(opt => opt.trim())
                     .filter(opt => opt.length > 0);
                   setFormData({ ...formData, dropdown_options: options });
@@ -253,7 +243,7 @@ export function CreateFieldDialog({ collectionId, onSuccess }: CreateFieldDialog
                 rows={4}
               />
               <p className="text-xs text-muted-foreground">
-                Enter options separated by commas or line breaks (e.g. Red, Blue, Green)
+                Enter options separated by commas (e.g., "Option 1, Option 2, Option 3")
               </p>
             </div>
           )}

@@ -9,6 +9,9 @@ type Props = {
 };
 
 export function FilePreview({ url, fieldType, className = '' }: Props) {
+  if (!url || typeof url !== 'string') {
+    return null;
+  }
   const isImage = fieldType === 'Image';
   const isVideo = url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
   const isPdf = url.match(/\.pdf$/i);

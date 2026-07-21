@@ -129,11 +129,6 @@ export default function UserManagementPage() {
       toast({ title: 'Validation Error', description: 'Email is required', variant: 'destructive' });
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      toast({ title: 'Validation Error', description: 'Invalid email format.', variant: 'destructive' });
-      return;
-    }
     if (!formData.password || formData.password.length < 6) {
       toast({ title: 'Validation Error', description: 'Password must be at least 6 characters', variant: 'destructive' });
       return;
@@ -174,16 +169,6 @@ export default function UserManagementPage() {
 
   const handleUpdate = async () => {
     if (!editingUser) return;
-
-    if (!formData.email.trim()) {
-      toast({ title: 'Validation Error', description: 'Email is required', variant: 'destructive' });
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      toast({ title: 'Validation Error', description: 'Invalid email format.', variant: 'destructive' });
-      return;
-    }
 
     setSaving(true);
     try {
@@ -228,7 +213,6 @@ export default function UserManagementPage() {
       setSaving(false);
     }
   };
-
 
   const handleDelete = async (userId: string, username: string) => {
     if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
@@ -317,10 +301,6 @@ export default function UserManagementPage() {
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          id="user-search-query"
-          name="user-search-query"
-          type="search"
-          autoComplete="off"
           placeholder="Search by username, email or role..."
           className="pl-9"
           value={searchQuery}

@@ -240,6 +240,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
+    const definedVars = body.variables || [];
+    const combined = body.subject + ' ' + body.html_content;
+    const matches = combined.match(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g);
+    if (matches) {
+      for (const match of matches) {
+        const varName = match.replace(/\{\{|\}\}/g, '').trim();
+        if (!definedVars.includes(varName)) {
+          return NextResponse.json({ success: false, error: `Variable {{${varName}}} is not defined.` }, { status: 400 });
+        }
+      }
+    }
+
     const db = await getDb();
     const result = await db.collection('email_templates').insertOne({
       name: body.name,
@@ -270,6 +282,24 @@ export async function PUT(request: NextRequest) {
     const db = await getDb();
     let objectId;
     try { objectId = new ObjectId(id); } catch { return NextResponse.json({ success: false, error: 'Invalid ID' }, { status: 400 }); }
+
+    const existingTemplate = await db.collection('email_templates').findOne({ _id: objectId });
+    if (!existingTemplate) return NextResponse.json({ success: false, error: 'Template not found' }, { status: 404 });
+
+    const finalSubject = updateData.subject !== undefined ? updateData.subject : existingTemplate.subject;
+    const finalHtml = updateData.html_content !== undefined ? updateData.html_content : existingTemplate.html_content;
+    const finalVars = updateData.variables !== undefined ? updateData.variables : existingTemplate.variables || [];
+
+    const combined = finalSubject + ' ' + finalHtml;
+    const matches = combined.match(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g);
+    if (matches) {
+      for (const match of matches) {
+        const varName = match.replace(/\{\{|\}\}/g, '').trim();
+        if (!finalVars.includes(varName)) {
+          return NextResponse.json({ success: false, error: `Variable {{${varName}}} is not defined.` }, { status: 400 });
+        }
+      }
+    }
 
     // Remove immutable fields from update
     delete updateData._id;

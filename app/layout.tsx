@@ -6,7 +6,6 @@ import { SidebarProvider } from '@/components/context/sidebar-context'
 import { Navbar } from '@/components/navbar'
 import { ClientSidebar } from '@/components/client-sidebar'
 import { AdminThemeLoader } from '@/components/admin-theme-loader'
-import { Toaster } from '@/components/ui/toaster'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,6 +24,8 @@ export const metadata: Metadata = {
   },
 }
 
+import { Toaster } from '@/components/ui/toaster'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,48 +33,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var reloadKey = 'next_chunk_reload_ts';
-                function reloadPage() {
-                  var now = Date.now();
-                  var lastReload = localStorage.getItem(reloadKey);
-                  if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
-                    localStorage.setItem(reloadKey, now.toString());
-                    console.warn('ChunkLoadError detected. Reloading page to fetch latest assets...');
-                    window.location.reload();
-                  }
-                }
-                function isChunkError(error) {
-                  if (!error) return false;
-                  return (
-                    error.name === 'ChunkLoadError' ||
-                    (error.message && error.message.indexOf('ChunkLoadError') !== -1) ||
-                    (error.message && error.message.indexOf('Failed to load chunk') !== -1)
-                  );
-                }
-                window.addEventListener('error', function(event) {
-                  var errorMsg = event.message || '';
-                  var isChunkLoad = errorMsg.indexOf('ChunkLoadError') !== -1 || 
-                                     errorMsg.indexOf('Failed to load chunk') !== -1 ||
-                                     isChunkError(event.error);
-                  if (isChunkLoad) {
-                    reloadPage();
-                  }
-                });
-                window.addEventListener('unhandledrejection', function(event) {
-                  if (isChunkError(event.reason)) {
-                    reloadPage();
-                  }
-                });
-              })();
-            `
-          }}
-        />
-      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans h-screen overflow-hidden bg-background text-foreground`}>
         <AdminThemeLoader />
         <SidebarProvider>
@@ -92,5 +51,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-

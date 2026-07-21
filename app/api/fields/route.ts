@@ -69,12 +69,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const nameRegex = /^[a-z0-9_]+$/;
-    if (!nameRegex.test(body.name)) {
-      return NextResponse.json(
-        { success: false, error: 'Field Name must contain only lowercase letters, numbers, and underscores' } as ApiResponse<null>,
-        { status: 400 }
+    if (body.field_type === 'Dropdown' && Array.isArray(body.dropdown_options)) {
+      const hasInvalidChars = body.dropdown_options.some(opt => 
+        typeof opt === 'string' && /<[^>]*>/i.test(opt)
       );
+      if (hasInvalidChars) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid characters detected in options' } as ApiResponse<null>,
+          { status: 400 }
+        );
+      }
     }
 
     const { data, error } = await createField({
@@ -86,11 +90,10 @@ export async function POST(request: NextRequest) {
       is_required: body.is_required ?? false,
       is_unique: body.is_unique ?? false,
       is_encrypted: body.is_encrypted ?? false,
-      validation_rules: body.validation_rules ?? [],
+      validation_rules: body.validation_rules ?? {},
       default_value: body.default_value,
       field_order: body.field_order ?? 0,
       relation_to_collection: body.relation_to_collection,
-      dropdown_options: body.dropdown_options ?? [],
     });
 
     if (error) {

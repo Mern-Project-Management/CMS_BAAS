@@ -59,6 +59,19 @@ export function Sidebar() {
   const { isOpen, toggle } = useSidebar();
   const { toast } = useToast();
 
+  // Dynamically apply admin-only favicon to the browser head
+  useEffect(() => {
+    if (typeof window !== 'undefined' && faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = faviconUrl;
+    }
+  }, [faviconUrl]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -82,32 +95,28 @@ export function Sidebar() {
           setFolders(folderJson.data || []);
         }
 
-        // Apply settings brand assets first
-        let settingsLogo = settingsJson?.success ? settingsJson.data?.logo_url : null;
-        let settingsFavicon = settingsJson?.success ? settingsJson.data?.favicon_url : null;
+        let logo = settingsJson?.success && settingsJson.data?.logo_url;
+        let favicon = settingsJson?.success && settingsJson.data?.favicon_url;
 
-        if (settingsLogo) {
-          setLogoUrl(settingsLogo);
-        } else if (footerJson.success && footerJson.data?.length > 0) {
-          const logo = footerJson.data[0]?.headerlogo?.[0];
-          if (logo) {
-            const formattedLogo = logo.startsWith('http')
-              ? logo
-              : `${process.env.NEXT_PUBLIC_API_URL}${logo.startsWith('/') ? '' : '/'}${logo}`;
-            setLogoUrl(formattedLogo);
-          }
+        // Fallback to footer data
+        if (!logo && footerJson.success && footerJson.data?.length > 0) {
+          logo = footerJson.data[0]?.headerlogo?.[0];
+        }
+        if (!favicon && footerJson.success && footerJson.data?.length > 0) {
+          favicon = footerJson.data[0]?.favicon?.[0];
         }
 
-        if (settingsFavicon) {
-          setFaviconUrl(settingsFavicon);
-        } else if (footerJson.success && footerJson.data?.length > 0) {
-          const favicon = footerJson.data[0]?.favicon?.[0];
-          if (favicon) {
-            const formattedFavicon = favicon.startsWith('http')
-              ? favicon
-              : `https://admin.wiretex.rndtd.com${favicon.startsWith('/') ? '' : '/'}${favicon}`;
-            setFaviconUrl(formattedFavicon);
-          }
+        if (logo) {
+          const formattedLogo = logo.startsWith('http')
+            ? logo
+            : `${process.env.NEXT_PUBLIC_API_URL || ''}${logo.startsWith('/') ? '' : '/'}${logo}`;
+          setLogoUrl(formattedLogo);
+        }
+        if (favicon) {
+          const formattedFavicon = favicon.startsWith('http')
+            ? favicon
+            : `${process.env.NEXT_PUBLIC_API_URL || ''}${favicon.startsWith('/') ? '' : '/'}${favicon}`;
+          setFaviconUrl(formattedFavicon);
         }
       } catch (err) {
         console.error('Sidebar fetch collections error', err);
@@ -646,6 +655,7 @@ export function Sidebar() {
        
             {hasPermission('color-manager') && renderSidebarLink("/color-manager", "Color Manager", <IconRenderer icon="ph:palette-fill" className="w-6 h-6 text-gray-500" />, pathname === '/color-manager', 'bg-primary text-black font-medium')}
             {hasPermission('page-manager') && renderSidebarLink("/page-manager", "Page Manager", <IconRenderer icon="ph:file-text-fill" className="w-6 h-6 text-gray-500" />, pathname === '/page-manager')}
+            {hasPermission('global-presence') && renderSidebarLink("/global-presence", "Global Presence", <IconRenderer icon="ph:map-pin-fill" className="w-6 h-6 text-gray-500" />, pathname === '/global-presence')}
             {hasPermission('calendar') && renderSidebarLink("/calendar", "Calendar", <IconRenderer icon="lucide:calendar" className="w-6 h-6 text-gray-500" />, pathname === '/calendar')}
             {hasPermission('api-docs') && renderSidebarLink("/api-docs", "API Docs", <Code className="w-5 h-5 text-gray-500" />, pathname === '/api-docs')}
             {/* Configuration Section — only show heading if user has access to at least one item */}

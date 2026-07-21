@@ -6,17 +6,12 @@ const PAGE_ROUTES: Record<string, string> = {
   'home-02': '/',
   'about-us': '/about-us',
   'blogs': '/blogs',
-  'careers': '/careers',
   'contact': '/contact',
-  'events': '/events',
   'downloads': '/downloads',
-  'global-presence': '/global-presence',
-  'industry-solutions': '/industry-solutions',
-  'manufacturing-infrastructure': '/manufacturing-infrastructure',
   'products': '/products',
-  'quality-certification': '/quality-certification',
-  'services': '/services',
   'terms-and-conditions': '/terms-and-conditions',
+  'categories': '/categories',
+  'our-capabilities': '/our-capabilities',
 };
 
 // GET /api/page-visibility - Get all pages with their visibility status

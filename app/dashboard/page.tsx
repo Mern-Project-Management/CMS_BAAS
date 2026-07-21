@@ -20,11 +20,14 @@ import {
   Sparkles,
   Lock,
   ArrowRight,
+  Database,
+  Settings,
+  HelpCircle,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardStats {
   counts: {
-    collections: number;
     products: number;
     blogs: number;
     careerLeads: number;
@@ -51,11 +54,13 @@ interface DashboardStats {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading, isSuperadmin, hasPermission } = useAuth();
+  const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [colors, setColors] = useState<any>(null);
-  const [seeding, setSeeding] = useState(false);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [installing, setInstalling] = useState(false);
 
   // Authentication guard
   useEffect(() => {
@@ -64,15 +69,16 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  // Fetch Stats and Colors in parallel
+  // Fetch Stats, Colors, and Collections in parallel
   useEffect(() => {
     if (!user) return;
 
     const fetchData = async () => {
       try {
-        const [statsRes, colorsRes] = await Promise.all([
+        const [statsRes, colorsRes, collectionsRes] = await Promise.all([
           fetch('/api/dashboard/stats').then(res => res.ok ? res.json() : { success: false }),
-          fetch('/api/colors').then(res => res.ok ? res.json() : { success: false })
+          fetch('/api/colors').then(res => res.ok ? res.json() : { success: false }),
+          fetch('/api/collections').then(res => res.ok ? res.json() : { success: false })
         ]);
 
         if (statsRes.success) {
@@ -80,6 +86,9 @@ export default function DashboardPage() {
         }
         if (colorsRes.success) {
           setColors(colorsRes.data.colors);
+        }
+        if (collectionsRes.success) {
+          setCollections(collectionsRes.data || []);
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -90,6 +99,32 @@ export default function DashboardPage() {
 
     fetchData();
   }, [user]);
+
+  const handleInstallDefaults = async () => {
+    setInstalling(true);
+    try {
+      const res = await fetch('/api/setup/seed-defaults', { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: 'Installation Successful',
+          description: 'Default collections and schemas have been successfully installed.',
+          variant: 'success'
+        });
+        window.location.reload();
+      } else {
+        throw new Error(json.error || 'Failed to install defaults');
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Installation Failed',
+        description: err.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setInstalling(false);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -178,6 +213,163 @@ export default function DashboardPage() {
     );
   }
 
+  if (collections.length === 0) {
+    return (
+      <div className="space-y-8 max-w-5xl mx-auto py-4">
+        {/* Onboarding Welcome Header */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/20 text-xs font-semibold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" />
+              Clean Setup Detected
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+              Welcome to your Admin CMS Panel!
+            </h2>
+            <p className="text-muted-foreground text-sm max-w-2xl leading-relaxed">
+              This is a clean installation with only core configuration schemas loaded. Follow our onboarding steps below or click to install default schemas to start managing your site immediately.
+            </p>
+          </div>
+          <Button 
+            onClick={handleInstallDefaults} 
+            disabled={installing} 
+            className="w-full md:w-auto h-12 px-6 font-bold shadow-lg shadow-primary/20 shrink-0 gap-2 bg-primary hover:bg-primary/95 text-primary-foreground"
+          >
+            {installing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Sparkles className="w-5 h-5" />
+            )}
+            {installing ? 'Installing Packages...' : 'Install Default Packages'}
+          </Button>
+        </div>
+
+        {/* 2-Column Onboarding Steps and Features */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Step-by-Step Onboarding Guide */}
+          <div className="lg:col-span-2 space-y-6">
+            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Setup Guide & Roadmap
+            </h3>
+
+            <div className="relative border-l border-border pl-6 ml-4 space-y-8">
+              
+              {/* Step 1 */}
+              <div className="relative">
+                <span className="absolute -left-[38px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold ring-4 ring-background">
+                  1
+                </span>
+                <div className="bg-card border rounded-xl p-5 hover:border-primary/30 transition-colors shadow-sm">
+                  <h4 className="font-bold text-sm text-foreground">Configure Sidebar Logo & Site favicon</h4>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Set up your business identity. Upload your custom sidebar logo and favicon from the profile settings form inside the top-right navbar menu.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="relative">
+                <span className="absolute -left-[38px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold ring-4 ring-background">
+                  2
+                </span>
+                <div className="bg-card border rounded-xl p-5 hover:border-primary/30 transition-colors shadow-sm">
+                  <h4 className="font-bold text-sm text-foreground">Establish Colors & Styles</h4>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Align the admin theme colors with your brand guidelines. Custom colors are saved directly into the website's SCSS styles.
+                  </p>
+                  <Button onClick={() => router.push('/color-manager')} variant="link" size="sm" className="p-0 text-xs font-semibold gap-1 text-primary mt-3 hover:underline">
+                    Go to Color Manager
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="relative">
+                <span className="absolute -left-[38px] top-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold ring-4 ring-background">
+                  3
+                </span>
+                <div className="bg-card border rounded-xl p-5 hover:border-primary/30 transition-colors shadow-sm">
+                  <h4 className="font-bold text-sm text-foreground">Set up Custom Database Schema Builder</h4>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Define new Collections (tables) like Products, Services, Blogs, or Testimonials. Set fields, validation checks, and data relations.
+                  </p>
+                  <div className="flex gap-4 mt-3">
+                    <Button onClick={() => router.push('/')} variant="link" size="sm" className="p-0 text-xs font-semibold gap-1 text-primary hover:underline">
+                      Create Schema manually
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                    <span className="text-muted-foreground/30 text-xs self-center">|</span>
+                    <button onClick={handleInstallDefaults} disabled={installing} className="text-xs font-semibold text-primary hover:underline">
+                      {installing ? 'Installing...' : 'Install Default Packages in 1-Click'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Features showcase */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold tracking-tight">
+              Platform Features
+            </h3>
+
+            <div className="space-y-4">
+              {/* Dynamic Schema Builder */}
+              <div className="p-4 rounded-xl border bg-card/60 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Database className="w-4 h-4 text-teal-600 animate-pulse" />
+                  <h5 className="text-sm font-bold text-foreground">Dynamic Schema Builder</h5>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Design database models, specify field type attributes, and build relationships visually without writing code.
+                </p>
+              </div>
+
+              {/* Page Section Manager */}
+              <div className="p-4 rounded-xl border bg-card/60 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Layout className="w-4 h-4 text-blue-600" />
+                  <h5 className="text-sm font-bold text-foreground">Page Section Manager</h5>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Activate, sort, and toggle visual components and layouts displayed on your website pages dynamically.
+                </p>
+              </div>
+
+              {/* Style & Theme Preset Editor */}
+              <div className="p-4 rounded-xl border bg-card/60 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-purple-600" />
+                  <h5 className="text-sm font-bold text-foreground">Style & Theme Preset Editor</h5>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Modify HSL variables and save brand color presets that persist and update website stylesheets instantly.
+                </p>
+              </div>
+
+              {/* SEO Auditor & Metadata */}
+              <div className="p-4 rounded-xl border bg-card/60 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-emerald-600" />
+                  <h5 className="text-sm font-bold text-foreground">SEO Auditor & Metadata</h5>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Audit visual search optimization scores, map page meta headers, and write custom JSON-LD schemas.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   // Format current date
   const formattedDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -185,102 +377,6 @@ export default function DashboardPage() {
     month: 'long',
     day: 'numeric',
   });
-
-  const handleSeedDefaults = async () => {
-    setSeeding(true);
-    try {
-      const res = await fetch('/api/setup/seed-defaults', { method: 'POST' });
-      const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'Seed failed');
-      toast({ title: 'Success', description: 'Default packages and database seeded!' });
-      window.dispatchEvent(new CustomEvent('sidebar:refresh'));
-      window.location.reload();
-    } catch (err: any) {
-      toast({ title: 'Seeding Failed', description: err.message, variant: 'destructive' });
-    } finally {
-      setSeeding(false);
-    }
-  };
-
-  // If there are no collections in the database, show the onboarding wizard
-  if (stats && stats.counts.collections === 0) {
-    return (
-      <div className="max-w-4xl mx-auto p-8 space-y-8">
-        <div className="flex items-center gap-3">
-          <span className="p-3 bg-primary/10 text-primary rounded-xl ring-1 ring-primary/20 animate-pulse">
-            <Sparkles className="w-8 h-8" />
-          </span>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Welcome to CMS Builder!</h1>
-            <p className="text-muted-foreground mt-1">Let&apos;s get your workspace configured and ready.</p>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Onboarding Checklist</CardTitle>
-              <CardDescription>Follow these steps to initialize your CMS database tables.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20">
-                <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">✓</span>
-                <div>
-                  <p className="font-semibold text-sm">Database Connected</p>
-                  <p className="text-xs text-muted-foreground">Your MongoDB connection is configured and active.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg border bg-card">
-                <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
-                <div className="flex-1">
-                  <p className="font-semibold text-sm">Install Default Packages</p>
-                  <p className="text-xs text-muted-foreground mb-3">Install standard collection tables (our_products, blog, faq, and manage-meta) to populate fields instantly.</p>
-                  <Button onClick={handleSeedDefaults} disabled={seeding} className="gap-2">
-                    {seeding ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Seeding…
-                      </>
-                    ) : (
-                      'Install Default Packages'
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/10 opacity-60">
-                <span className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
-                <div>
-                  <p className="font-semibold text-sm">Add custom schemas & records</p>
-                  <p className="text-xs text-muted-foreground">Build fields dynamically and feed content via tables.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="text-base font-bold">Workspace Highlights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div className="space-y-1">
-                <p className="font-semibold text-foreground">🎨 Color Manager</p>
-                <p className="text-xs">Tailor frontend theme variables dynamically to match your branding elements.</p>
-              </div>
-              <div className="space-y-1">
-                <p className="font-semibold text-foreground">🔍 Dynamic SEO Rules</p>
-                <p className="text-xs">Tweak tab titles, descriptions and canonical schemas on the fly.</p>
-              </div>
-              <div className="space-y-1">
-                <p className="font-semibold text-foreground">📁 Public Upload Cleanups</p>
-                <p className="text-xs">Automatically unlinks and deletes local media items when deleted from collections.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

@@ -6,13 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,17 +22,35 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Login failed');
+      let json: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        json = await res.json();
+      } else {
+        const text = await res.text();
+        // Limit HTML display if the response is a full page
+        const isHtml = text.trim().startsWith('<');
+        const cleanMessage = isHtml ? `Server error (Status ${res.status})` : (text || `Request failed with status ${res.status}`);
+        throw new Error(cleanMessage);
       }
-      toast({ title: 'Login successful', description: `Welcome, ${json.data.username}!`, variant: 'success' });
+      
+      if (!res.ok || !json.success) {
+        const errorMsg = typeof json.error === 'string' 
+          ? json.error 
+          : (json.error?.message || json.message || 'Login failed');
+        throw new Error(errorMsg);
+      }
+      toast({ 
+        title: 'Login successful', 
+        description: `Welcome, ${json.data.username}!`,
+        variant: 'success'
+      });
       router.push('/');
       router.refresh();
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: 'Login failed',
-        description: err instanceof Error ? err.message : 'Invalid credentials',
+        description: err?.message || String(err) || 'Invalid credentials',
         variant: 'destructive',
       });
     } finally {
@@ -63,25 +79,14 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Password</label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  placeholder="Enter password"
-                  disabled={loading}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  disabled={loading}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+              <Input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                placeholder="Enter password"
+                disabled={loading}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (

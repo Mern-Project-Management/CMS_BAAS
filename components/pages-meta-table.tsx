@@ -11,9 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Play, Loader2, Pencil, Trash2, CheckCircle2, AlertTriangle, XCircle, Search, Info, ExternalLink, Code
+  Play, Loader2, Pencil, Trash2, CheckCircle2, AlertTriangle, XCircle, Search, Info, ExternalLink, Code, HelpCircle, Plus
 } from 'lucide-react';
 import type { Field } from '@/lib/types';
+import { RecordForm } from '@/components/record-form';
 
 type RecordRow = {
   id: string;
@@ -76,7 +77,86 @@ export function PagesMetaTable({
   
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // FAQ Management Dialog States
+  const [faqDialogOpen, setFaqDialogOpen] = useState(false);
+  const [selectedFaqSlug, setSelectedFaqSlug] = useState<string | null>(null);
+  const [faqList, setFaqList] = useState<any[]>([]);
+  const [loadingFaqs, setLoadingFaqs] = useState(false);
+  const [faqFields, setFaqFields] = useState<any[]>([]);
+  const [addingFaq, setAddingFaq] = useState(false);
+
+  const fetchFaqsForPage = async (pageName: string) => {
+    setLoadingFaqs(true);
+    try {
+      const res = await fetch(`/api/data/6a477a863042d14bb0be8de2?page=${encodeURIComponent(pageName)}`);
+      const json = await res.json();
+      if (json.success) {
+        setFaqList(json.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch FAQs', err);
+    } finally {
+      setLoadingFaqs(false);
+    }
+  };
+
+  const handleOpenFaqs = async (slug: string) => {
+    const pageVal = slug.replace(/^\/|\/$/g, "") || "home";
+    setSelectedFaqSlug(pageVal);
+    setFaqDialogOpen(true);
+    setAddingFaq(false);
+    fetchFaqsForPage(pageVal);
+    
+    if (faqFields.length === 0) {
+      try {
+        const res = await fetch('/api/fields?collection_id=6a477a863042d14bb0be8de2');
+        const json = await res.json();
+        if (json.success) {
+          setFaqFields(json.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch FAQ fields', err);
+      }
+    }
+  };
+
+  // Custom Confirmation Dialog States
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => void) | null>(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmDescription, setConfirmDescription] = useState('');
+
+  const triggerDeleteMeta = (id: string) => {
+    setPendingDeleteAction(() => () => executeDeleteMeta(id));
+    setConfirmTitle('Delete Page Metadata?');
+    setConfirmDescription('Are you sure you want to permanently delete this page metadata rule? This action is irreversible.');
+    setConfirmOpen(true);
+  };
+
+  const triggerDeleteFaq = (faqId: string) => {
+    setPendingDeleteAction(() => () => executeDeleteFaq(faqId));
+    setConfirmTitle('Delete FAQ?');
+    setConfirmDescription('Are you sure you want to permanently delete this FAQ? This action is irreversible.');
+    setConfirmOpen(true);
+  };
+
+  const executeDeleteFaq = async (faqId: string) => {
+    try {
+      const res = await fetch(`/api/data/6a477a863042d14bb0be8de2/${faqId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: 'FAQ deleted successfully' });
+        if (selectedFaqSlug) {
+          fetchFaqsForPage(selectedFaqSlug);
+        }
+      } else {
+        throw new Error(json.error || 'Failed to delete FAQ');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
   
   // Edit Dialog States
   const [editRecord, setEditRecord] = useState<RecordRow | null>(null);
@@ -85,7 +165,8 @@ export function PagesMetaTable({
     meta_title: '',
     meta_description: '',
     keywords: '',
-    schema: ''
+    schema: '',
+    canonical_link: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -145,7 +226,8 @@ export function PagesMetaTable({
       meta_title: record.meta_title || '',
       meta_description: record.meta_description || '',
       keywords: record.keywords || '',
-      schema: schemaStr
+      schema: schemaStr,
+      canonical_link: record.canonical_link || ''
     });
   };
 
@@ -169,7 +251,8 @@ export function PagesMetaTable({
         meta_title: editData.meta_title,
         meta_description: editData.meta_description,
         keywords: editData.keywords,
-        schema: parsedSchema
+        schema: parsedSchema,
+        canonical_link: editData.canonical_link
       };
 
       const res = await fetch(`/api/data/${collectionId}/${editRecord.id}`, {
@@ -181,7 +264,7 @@ export function PagesMetaTable({
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Update failed');
       
-      toast({ title: 'SEO metadata updated successfully', variant: 'success' });
+      toast({ title: 'SEO metadata updated successfully' });
       setEditRecord(null);
       onUpdate();
     } catch (err: any) {
@@ -192,15 +275,14 @@ export function PagesMetaTable({
   };
 
   // Delete Record
-  const handleDelete = async (id: string) => {
+  const executeDeleteMeta = async (id: string) => {
     setDeletingId(id);
     try {
       const res = await fetch(`/api/data/${collectionId}/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Delete failed');
-      toast({ title: 'Page SEO rule deleted', variant: 'success' });
+      toast({ title: 'Page SEO rule deleted' });
       onDelete();
-      setDeleteConfirmId(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -339,6 +421,15 @@ export function PagesMetaTable({
                           <Button 
                             variant="ghost" 
                             size="icon" 
+                            onClick={() => handleOpenFaqs(r.slug)} 
+                            className="h-8 w-8 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                            title="Manage FAQs"
+                          >
+                            <HelpCircle className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
                             onClick={() => openEdit(r)} 
                             className="h-8 w-8 hover:text-primary"
                             title="Edit Meta Info"
@@ -348,7 +439,7 @@ export function PagesMetaTable({
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            onClick={() => setDeleteConfirmId(r.id)} 
+                            onClick={() => triggerDeleteMeta(r.id)} 
                             className="h-8 w-8 text-destructive hover:bg-destructive/10"
                             disabled={deletingId === r.id}
                             title="Delete SEO rule"
@@ -514,6 +605,15 @@ export function PagesMetaTable({
               </div>
 
               <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-primary/70 uppercase tracking-wide">Canonical Link</label>
+                <Input 
+                  value={editData.canonical_link} 
+                  onChange={(e) => setEditData(prev => ({ ...prev, canonical_link: e.target.value }))}
+                  placeholder="https://yourwebsite.com/page-url" 
+                />
+              </div>
+
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-primary/70 uppercase tracking-wide">Schema Markup (JSON-LD)</label>
                 <Textarea 
                   value={editData.schema} 
@@ -535,40 +635,137 @@ export function PagesMetaTable({
           )}
         </DialogContent>
       </Dialog>
-      {/* ── DELETE CONFIRMATION MODAL ── */}
-      <Dialog open={!!deleteConfirmId} onOpenChange={(o) => !o && setDeleteConfirmId(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-              Confirm Deletion
+
+      {/* ══════════════════════════════════════
+          FAQ MANAGEMENT DIALOG
+      ══════════════════════════════════════ */}
+      <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center justify-between border-b pb-4">
+            <div>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-primary" />
+                <span>Manage FAQs</span>
+                {selectedFaqSlug && (
+                  <Badge variant="secondary" className="font-mono text-xs bg-primary/10 text-primary">
+                    /{selectedFaqSlug}
+                  </Badge>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                Add, view, and remove Frequently Asked Questions for this page.
+              </DialogDescription>
+            </div>
+            {!addingFaq && (
+              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1">
+                <Plus className="w-4 h-4" />
+                Add FAQs
+              </Button>
+            )}
+          </DialogHeader>
+
+          {addingFaq ? (
+            <div className="py-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Creating FAQs</h3>
+                <Button variant="ghost" size="sm" onClick={() => setAddingFaq(false)}>
+                  Back to List
+                </Button>
+              </div>
+              <RecordForm
+                collectionId="6a477a863042d14bb0be8de2"
+                fields={faqFields}
+                defaultValues={{ page: selectedFaqSlug }}
+                onCreated={() => {
+                  setAddingFaq(false);
+                  if (selectedFaqSlug) {
+                    fetchFaqsForPage(selectedFaqSlug);
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="py-4 space-y-4">
+              {loadingFaqs ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                  <p className="text-sm font-medium text-muted-foreground">Loading FAQs...</p>
+                </div>
+              ) : faqList.length === 0 ? (
+                <div className="text-center py-16 border-2 border-dashed rounded-xl border-muted/50">
+                  <HelpCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-muted-foreground">No FAQs defined for this page yet.</p>
+                  <p className="text-xs text-muted-foreground/75 mt-1">Click "Add FAQs" to create the first one.</p>
+                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1">
+                    <Plus className="w-4 h-4" />
+                    Create First FAQ
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {faqList.map((faq) => (
+                    <div key={faq.id} className="p-4 rounded-xl border bg-card shadow-sm flex items-start justify-between gap-4">
+                      <div className="space-y-1.5 flex-1">
+                        <h4 className="font-bold text-sm text-foreground">{faq.question}</h4>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{faq.ans}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => triggerDeleteFaq(faq.id)}
+                        className="text-destructive hover:bg-destructive/10 h-8 w-8 shrink-0"
+                        title="Delete FAQ"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════
+          CUSTOM CONFIRMATION DIALOG
+      ══════════════════════════════════════ */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="flex flex-col items-center text-center pt-6">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 animate-pulse" />
+            </div>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              {confirmTitle}
             </DialogTitle>
-            <DialogDescription className="pt-2">
-              Are you sure you want to permanently delete this page meta rule? This action cannot be undone.
+            <DialogDescription className="text-sm text-muted-foreground mt-2 px-2">
+              {confirmDescription}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex sm:justify-end gap-2 pt-4">
+          <DialogFooter className="flex gap-2 sm:justify-center border-t pt-4 mt-4">
             <Button
               variant="outline"
-              onClick={() => setDeleteConfirmId(null)}
-              disabled={deletingId !== null}
+              onClick={() => {
+                setConfirmOpen(false);
+                setPendingDeleteAction(null);
+              }}
+              className="flex-1 max-w-[150px]"
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-              disabled={deletingId !== null}
-              className="gap-1.5"
+              onClick={() => {
+                if (pendingDeleteAction) {
+                  pendingDeleteAction();
+                }
+                setConfirmOpen(false);
+                setPendingDeleteAction(null);
+              }}
+              className="flex-1 max-w-[150px] shadow-sm shadow-destructive/20"
             >
-              {deletingId !== null ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Deleting…
-                </>
-              ) : (
-                'Delete'
-              )}
+              Yes, Delete
             </Button>
           </DialogFooter>
         </DialogContent>

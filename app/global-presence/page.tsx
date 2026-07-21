@@ -620,7 +620,7 @@ export default function GlobalPresencePage() {
               <div className="space-y-1">
                 <Label>Email label</Label>
                 <Input
-                  placeholder="support@bexon.com"
+                  placeholder="support@ostech.in"
                   value={form.emailLabel}
                   onChange={(e) => setForm((f) => ({ ...f, emailLabel: e.target.value }))}
                 />
@@ -628,7 +628,7 @@ export default function GlobalPresencePage() {
               <div className="space-y-1">
                 <Label>Email href</Label>
                 <Input
-                  placeholder="mailto:support@bexon.com"
+                  placeholder="mailto:support@ostech.in"
                   value={form.emailHref}
                   onChange={(e) => setForm((f) => ({ ...f, emailHref: e.target.value }))}
                 />

@@ -41,9 +41,11 @@ import { HierarchicalSelector } from './hierarchical-selector';
 import { PageRouteSelector } from './page-route-selector';
 import { TipTapEditor } from './tiptap-editor';
 import { ColorField, ColorSwatch } from './color-field';
-import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, AlertTriangle } from 'lucide-react';
+import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, HelpCircle, Plus, AlertTriangle } from 'lucide-react';
 import type { Field } from '@/lib/types';
-import { validateRecord } from '@/lib/validation-engine';
+import { RecordForm } from '@/components/record-form';
+
+import { FaqPageSelector } from '@/components/faq-page-selector';
 
 const slugify = (str: string) =>
   str
@@ -101,14 +103,100 @@ export function RecordsTable({
 
   // All fields — we intentionally IGNORE hiddenFieldNames so all data is shown
   const allFields = fields;
+
+  const isProductsCollection = collectionId === 'our_products' || collectionId === '6a1e830b76dbcc921bb5af83';
+  const isBlogCollection = collectionId === 'blog' || collectionId === '6a11400a3facc053a2a24c42';
+  const hasFaqOption = isProductsCollection || isBlogCollection;
+
+  // FAQ Management Dialog States
+  const [faqDialogOpen, setFaqDialogOpen] = useState(false);
+  const [selectedFaqSlug, setSelectedFaqSlug] = useState<string | null>(null);
+  const [faqList, setFaqList] = useState<any[]>([]);
+  const [loadingFaqs, setLoadingFaqs] = useState(false);
+  const [faqFields, setFaqFields] = useState<any[]>([]);
+  const [addingFaq, setAddingFaq] = useState(false);
+
+  const fetchFaqsForPage = async (pageName: string) => {
+    setLoadingFaqs(true);
+    try {
+      const res = await fetch(`/api/data/6a477a863042d14bb0be8de2?page=${encodeURIComponent(pageName)}`);
+      const json = await res.json();
+      if (json.success) {
+        setFaqList(json.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch FAQs', err);
+    } finally {
+      setLoadingFaqs(false);
+    }
+  };
+
+  const handleOpenFaqs = async (pageSlug: string) => {
+    setSelectedFaqSlug(pageSlug);
+    setFaqDialogOpen(true);
+    setAddingFaq(false);
+    fetchFaqsForPage(pageSlug);
+    
+    if (faqFields.length === 0) {
+      try {
+        const res = await fetch('/api/fields?collection_id=6a477a863042d14bb0be8de2');
+        const json = await res.json();
+        if (json.success) {
+          setFaqFields(json.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch FAQ fields', err);
+      }
+    }
+  };
+
+  // Custom Confirmation Dialog States
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => void) | null>(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmDescription, setConfirmDescription] = useState('');
+
+  const triggerDeleteRecord = (id: string) => {
+    setPendingDeleteAction(() => () => executeDeleteRecord(id));
+    setConfirmTitle('Delete Record?');
+    setConfirmDescription('Are you sure you want to permanently delete this record? This action is irreversible.');
+    setConfirmOpen(true);
+  };
+
+  const triggerDeleteFaq = (faqId: string) => {
+    setPendingDeleteAction(() => () => executeDeleteFaq(faqId));
+    setConfirmTitle('Delete FAQ?');
+    setConfirmDescription('Are you sure you want to permanently delete this FAQ? This action is irreversible.');
+    setConfirmOpen(true);
+  };
+
+  const executeDeleteFaq = async (faqId: string) => {
+    try {
+      const res = await fetch(`/api/data/6a477a863042d14bb0be8de2/${faqId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: 'FAQ deleted successfully' });
+        if (selectedFaqSlug) {
+          fetchFaqsForPage(selectedFaqSlug);
+        }
+      } else {
+        throw new Error(json.error || 'Failed to delete FAQ');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const getFaqPageValue = (record: any) => {
+    const slug = record.slug || '';
+    if (isBlogCollection) {
+      return `blogs/${slug}`;
+    }
+    const catSlug = record.category_populated?.category_slug || record.category_populated?.slug || '';
+    return catSlug ? `${catSlug}/${slug}` : slug;
+  };
   
   const [hiddenCols, setHiddenCols] = useState<Set<string>>(() => new Set(hiddenFields));
-
-  console.log('RecordsTable RENDER:', {
-    allFields: allFields.map(f => ({ name: f.name, id: f.id, display_name: f.display_name })),
-    hiddenCols: Array.from(hiddenCols),
-    shownFields: allFields.filter((f) => !hiddenCols.has(f.id)).map(f => f.name),
-  });
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -169,7 +257,6 @@ const extraKeys = records.length > 0
   const [editData, setEditData] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const openEdit = useCallback((record: RecordRow) => {
     const seed: Record<string, any> = {};
@@ -180,7 +267,7 @@ const extraKeys = records.length > 0
     setEditRecord(record);
   }, [fields]);
 
-  async function handleDelete(id: string) {
+  async function executeDeleteRecord(id: string) {
     setDeletingId(id);
     try {
       const res = await fetch(`/api/data/${collectionId}/${id}`, { method: 'DELETE' });
@@ -188,7 +275,6 @@ const extraKeys = records.length > 0
       if (!res.ok || !json.success) throw new Error(json.error || 'Delete failed');
       toast({ title: 'Record deleted', variant: 'success' });
       onDelete();
-      setDeleteConfirmId(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -200,38 +286,10 @@ const extraKeys = records.length > 0
     if (!editRecord) return;
     setSaving(true);
     try {
-      // Normalize editData payload: filter out empty array items for Array/ImageArray fields
-      const payload: Record<string, any> = {};
-      fields.forEach((field) => {
-        const v = editData[field.name];
-        if (field.field_type === 'Array') {
-          const arr = Array.isArray(v) ? v : v ? [String(v)] : [];
-          payload[field.name] = arr.filter((s) => s.trim() !== '');
-        } else if (field.field_type === 'ImageArray') {
-          payload[field.name] = Array.isArray(v) ? v.filter(Boolean) : [];
-        } else {
-          payload[field.name] = v;
-        }
-      });
-
-      // Validate fields against rules
-      const validation = validateRecord(payload, fields);
-      if (!validation.valid) {
-        validation.errors.forEach((err) => {
-          toast({
-            title: 'Validation Error',
-            description: err.message,
-            variant: 'destructive',
-          });
-        });
-        setSaving(false);
-        return;
-      }
-
       const res = await fetch(`/api/data/${collectionId}/${editRecord.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(editData),
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Update failed');
@@ -284,6 +342,18 @@ const extraKeys = records.length > 0
       }
       return next;
     });
+
+    const isFaqPageField = field.name === 'page' && (collectionId === 'faq' || collectionId === '6a477a863042d14bb0be8de2');
+    
+    if (isFaqPageField) {
+      return (
+        <FaqPageSelector
+          value={value}
+          onChange={setValue}
+          required={field.is_required}
+        />
+      );
+    }
 
     switch (field.field_type) {
       case 'Boolean':
@@ -416,26 +486,6 @@ const extraKeys = records.length > 0
             recordId={editRecord?.id}
           />
         );
-      case 'Dropdown': {
-        const options = Array.isArray(field.dropdown_options) ? field.dropdown_options : [];
-        return (
-          <Select
-            value={value || ''}
-            onValueChange={setValue}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={`Select ${field.display_name}...`} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {opt}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      }
       default:
         return (
           <Input
@@ -660,6 +710,17 @@ const extraKeys = records.length > 0
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
+                        {hasFaqOption && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                            title="Manage FAQs"
+                            onClick={() => handleOpenFaqs(getFaqPageValue(r))}
+                          >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -674,7 +735,7 @@ const extraKeys = records.length > 0
                           size="icon"
                           className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
                           title="Delete record"
-                          onClick={() => setDeleteConfirmId(r.id)}
+                          onClick={() => triggerDeleteRecord(r.id)}
                           disabled={deletingId === r.id}
                         >
                           {deletingId === r.id ? (
@@ -859,40 +920,137 @@ const extraKeys = records.length > 0
           )}
         </DialogContent>
       </Dialog>
-      {/* ── DELETE CONFIRMATION MODAL ── */}
-      <Dialog open={!!deleteConfirmId} onOpenChange={(o) => !o && setDeleteConfirmId(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-              Confirm Deletion
+
+      {/* ══════════════════════════════════════
+          FAQ MANAGEMENT DIALOG
+      ══════════════════════════════════════ */}
+      <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center justify-between border-b pb-4">
+            <div>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-primary" />
+                <span>Manage FAQs</span>
+                {selectedFaqSlug && (
+                  <Badge variant="secondary" className="font-mono text-xs bg-primary/10 text-primary">
+                    /{selectedFaqSlug}
+                  </Badge>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                Add, view, and remove Frequently Asked Questions for this product page.
+              </DialogDescription>
+            </div>
+            {!addingFaq && (
+              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1">
+                <Plus className="w-4 h-4" />
+                Add FAQs
+              </Button>
+            )}
+          </DialogHeader>
+
+          {addingFaq ? (
+            <div className="py-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Creating FAQs</h3>
+                <Button variant="ghost" size="sm" onClick={() => setAddingFaq(false)}>
+                  Back to List
+                </Button>
+              </div>
+              <RecordForm
+                collectionId="6a477a863042d14bb0be8de2"
+                fields={faqFields}
+                defaultValues={{ page: selectedFaqSlug }}
+                onCreated={() => {
+                  setAddingFaq(false);
+                  if (selectedFaqSlug) {
+                    fetchFaqsForPage(selectedFaqSlug);
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="py-4 space-y-4">
+              {loadingFaqs ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <span className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                  <p className="text-sm font-medium text-muted-foreground">Loading FAQs...</p>
+                </div>
+              ) : faqList.length === 0 ? (
+                <div className="text-center py-16 border-2 border-dashed rounded-xl border-muted/50">
+                  <HelpCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-muted-foreground">No FAQs defined for this product page yet.</p>
+                  <p className="text-xs text-muted-foreground/75 mt-1">Click "Add FAQs" to create the first one.</p>
+                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1">
+                    <Plus className="w-4 h-4" />
+                    Create First FAQ
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {faqList.map((faq) => (
+                    <div key={faq.id} className="p-4 rounded-xl border bg-card shadow-sm flex items-start justify-between gap-4">
+                      <div className="space-y-1.5 flex-1">
+                        <h4 className="font-bold text-sm text-foreground">{faq.question}</h4>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{faq.ans}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => triggerDeleteFaq(faq.id)}
+                        className="text-destructive hover:bg-destructive/10 h-8 w-8 shrink-0"
+                        title="Delete FAQ"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════
+          CUSTOM CONFIRMATION DIALOG
+      ══════════════════════════════════════ */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="flex flex-col items-center text-center pt-6">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 animate-pulse" />
+            </div>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              {confirmTitle}
             </DialogTitle>
-            <DialogDescription className="pt-2">
-              Are you sure you want to permanently delete this record? This action cannot be undone.
+            <DialogDescription className="text-sm text-muted-foreground mt-2 px-2">
+              {confirmDescription}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex sm:justify-end gap-2 pt-4">
+          <DialogFooter className="flex gap-2 sm:justify-center border-t pt-4 mt-4">
             <Button
               variant="outline"
-              onClick={() => setDeleteConfirmId(null)}
-              disabled={deletingId !== null}
+              onClick={() => {
+                setConfirmOpen(false);
+                setPendingDeleteAction(null);
+              }}
+              className="flex-1 max-w-[150px]"
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-              disabled={deletingId !== null}
-              className="gap-1.5"
+              onClick={() => {
+                if (pendingDeleteAction) {
+                  pendingDeleteAction();
+                }
+                setConfirmOpen(false);
+                setPendingDeleteAction(null);
+              }}
+              className="flex-1 max-w-[150px] shadow-sm shadow-destructive/20"
             >
-              {deletingId !== null ? (
-                <>
-                  <span className="w-4 h-4 rounded-full border-2 border-destructive-foreground/30 border-t-destructive-foreground animate-spin" />
-                  Deleting…
-                </>
-              ) : (
-                'Delete'
-              )}
+              Yes, Delete
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1005,10 +1163,6 @@ function renderViewValue(record: RecordRow, field: Field) {
   const value = record[field.name];
   if (value === undefined || value === null) return <span className="text-muted-foreground italic">—</span>;
 
-  if (field.is_encrypted) {
-    return <span className="text-xs text-muted-foreground font-mono">••••••••</span>;
-  }
-
   switch (field.field_type) {
     case 'Boolean':
       return (
@@ -1115,10 +1269,6 @@ function isRawObjectId(str: string): boolean {
 function formatValue(record: RecordRow, field: Field) {
   const value = record[field.name];
   if (value === undefined || value === null) return <span className="text-muted-foreground/50">—</span>;
-
-  if (field.is_encrypted) {
-    return <span className="text-xs text-muted-foreground font-mono">••••••••</span>;
-  }
 
   if (field.field_type === 'Relation') {
     const populated = record[`${field.name}_populated`];

@@ -192,13 +192,24 @@ export async function POST(
     if (collectionFields) {
       for (const field of collectionFields) {
         if (field.is_unique && body[field.name] !== undefined && body[field.name] !== null && body[field.name] !== '') {
-          const query = { [field.name]: body[field.name] };
-          const existing = await db.collection(collection.name).findOne(query);
-          if (existing) {
-            return NextResponse.json(
-              { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
-              { status: 400 }
-            );
+          if (field.is_encrypted) {
+            const allRecords = await db.collection(collection.name).find({ [field.name]: { $exists: true } }).toArray();
+            const exists = allRecords.some((r: any) => decryptValue(r[field.name]) === String(body[field.name]));
+            if (exists) {
+              return NextResponse.json(
+                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
+                { status: 400 }
+              );
+            }
+          } else {
+            const query = { [field.name]: body[field.name] };
+            const existing = await db.collection(collection.name).findOne(query);
+            if (existing) {
+              return NextResponse.json(
+                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
+                { status: 400 }
+              );
+            }
           }
         }
       }
@@ -306,16 +317,30 @@ export async function PATCH(
     if (collectionFields) {
       for (const field of collectionFields) {
         if (field.is_unique && body[field.name] !== undefined && body[field.name] !== null && body[field.name] !== '') {
-          const query = { 
-            [field.name]: body[field.name],
-            _id: { $ne: oid(id)! }
-          };
-          const existing = await _db.collection(collection.name).findOne(query);
-          if (existing) {
-            return NextResponse.json(
-              { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
-              { status: 400 }
-            );
+          if (field.is_encrypted) {
+            const allRecords = await _db.collection(collection.name).find({ 
+              [field.name]: { $exists: true },
+              _id: { $ne: oid(id)! } 
+            }).toArray();
+            const exists = allRecords.some((r: any) => decryptValue(r[field.name]) === String(body[field.name]));
+            if (exists) {
+              return NextResponse.json(
+                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
+                { status: 400 }
+              );
+            }
+          } else {
+            const query = { 
+              [field.name]: body[field.name],
+              _id: { $ne: oid(id)! }
+            };
+            const existing = await _db.collection(collection.name).findOne(query);
+            if (existing) {
+              return NextResponse.json(
+                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
+                { status: 400 }
+              );
+            }
           }
         }
       }

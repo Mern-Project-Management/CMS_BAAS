@@ -59,10 +59,6 @@ export async function POST(request: NextRequest) {
     if (!email?.trim()) {
       return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email.trim())) {
-      return NextResponse.json({ success: false, error: 'Invalid email format.' }, { status: 400 });
-    }
     if (!password || password.length < 6) {
       return NextResponse.json({ success: false, error: 'Password must be at least 6 characters' }, { status: 400 });
     }
@@ -200,14 +196,7 @@ export async function PATCH(request: NextRequest) {
       updateDoc.username = username.trim();
     }
 
-    if (email !== undefined) {
-      if (!email.trim()) {
-        return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(email.trim())) {
-        return NextResponse.json({ success: false, error: 'Invalid email format.' }, { status: 400 });
-      }
+    if (email?.trim()) {
       // Check email uniqueness (excluding self)
       const existing = await usersCol.findOne({ email: email.trim().toLowerCase(), _id: { $ne: userId } });
       if (existing) {

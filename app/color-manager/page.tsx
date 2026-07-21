@@ -29,6 +29,7 @@ const defaultColors = {
     body3: '#67787a',
     body4: '#18292c',
     body5: '#ffffffcc',
+    body6: '#ffffff',
   },
   theme: {
     primary: '#1e8a8a',
@@ -64,7 +65,7 @@ const defaultColors = {
     sidebarBackground: '#ffffff',
     sidebarForeground: '#0f172a',
     success: '#10b981',
-    successForeground: '#052e16',
+    successForeground: '#ffffff',
   },
 };
 
@@ -78,6 +79,7 @@ const cssVariableMap: Record<string, string> = {
   'text-body-3': '--tj-color-text-body-3',
   'text-body-4': '--tj-color-text-body-4',
   'text-body-5': '--tj-color-text-body-5',
+  'text-body-6': '--tj-color-text-body-6',
   'theme-primary': '--tj-color-theme-primary',
   'theme-bg': '--tj-color-theme-bg',
   'theme-bg-2': '--tj-color-theme-bg-2',
@@ -95,12 +97,14 @@ const cssVariableMap: Record<string, string> = {
   'border-3': '--tj-color-border-3',
   'border-4': '--tj-color-border-4',
   'border-5': '--tj-color-border-5',
+  'admin-success': '--success',
+  'admin-success-foreground': '--success-foreground',
 };
 
 // ── Color Categories ───────────────────────────────────────────────────────
 const colorCategories = {
   theme: ['primary', 'bg', 'bg2', 'bg3', 'dark', 'dark2', 'dark3', 'dark4', 'dark5'],
-  text: ['body', 'body2', 'body3', 'body4', 'body5'],
+  text: ['body', 'body2', 'body3', 'body4', 'body5', 'body6'],
   border: ['1', '2', '3', '4', '5'],
   common: ['white', 'black'],
   heading: ['primary'],
@@ -108,8 +112,7 @@ const colorCategories = {
   admin: [
     'background', 'foreground', 'card', 'cardForeground', 
     'primary', 'primaryForeground', 'border', 
-    'sidebarBackground', 'sidebarForeground',
-    'success', 'successForeground'
+    'sidebarBackground', 'sidebarForeground', 'success', 'successForeground'
   ],
 };
 

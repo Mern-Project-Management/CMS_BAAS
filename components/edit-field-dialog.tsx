@@ -36,7 +36,6 @@ interface EditFieldDialogProps {
 export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFieldDialogProps) {
   const [loading, setLoading] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [dropdownOptionsText, setDropdownOptionsText] = useState('');
   const [formData, setFormData] = useState<Partial<Field>>({
     name: '',
     display_name: '',
@@ -47,14 +46,11 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
     is_encrypted: false,
     validation_rules: [],
     relation_to_collection: '',
-    dropdown_options: [],
   });
   const { toast } = useToast();
 
   useEffect(() => {
     if (open && field) {
-      const opts = Array.isArray(field.dropdown_options) ? field.dropdown_options : [];
-      setDropdownOptionsText(opts.join(', '));
       setFormData({
         name: field.name,
         display_name: field.display_name,
@@ -63,9 +59,8 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
         is_required: field.is_required,
         is_unique: field.is_unique,
         is_encrypted: field.is_encrypted,
-        validation_rules: Array.isArray(field.validation_rules) ? field.validation_rules : [],
+        validation_rules: field.validation_rules || [],
         relation_to_collection: field.relation_to_collection || '',
-        dropdown_options: opts,
       });
     }
   }, [open, field]);
@@ -75,14 +70,6 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
       fetchCollections();
     }
   }, [open]);
-
-  // Reset dropdown_options when field type changes
-  useEffect(() => {
-    if (formData.field_type !== 'Dropdown') {
-      setFormData(prev => ({ ...prev, dropdown_options: [] }));
-      setDropdownOptionsText('');
-    }
-  }, [formData.field_type]);
 
   async function fetchCollections() {
     try {
@@ -109,11 +96,6 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
     try {
       if (!formData.name || !formData.display_name) {
         throw new Error('Name and display name are required');
-      }
-
-      const nameRegex = /^[a-z0-9_]+$/;
-      if (!nameRegex.test(formData.name)) {
-        throw new Error('Field Name must contain only lowercase letters, numbers, and underscores');
       }
 
       const response = await fetch(`/api/fields/${field.id}`, {
@@ -221,29 +203,6 @@ export function EditFieldDialog({ field, open, onOpenChange, onSuccess }: EditFi
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
-
-          {formData.field_type === 'Dropdown' && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-              <Label>Dropdown Options</Label>
-              <Textarea
-                placeholder="Option 1, Option 2, Option 3 (or one per line)"
-                value={dropdownOptionsText}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setDropdownOptionsText(val);
-                  const options = val
-                    .split(/[,\n]+/)
-                    .map(opt => opt.trim())
-                    .filter(opt => opt.length > 0);
-                  setFormData(prev => ({ ...prev, dropdown_options: options }));
-                }}
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter options separated by commas or line breaks (e.g. Red, Blue, Green)
-              </p>
             </div>
           )}
 

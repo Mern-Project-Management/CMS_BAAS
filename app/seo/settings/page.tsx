@@ -169,116 +169,17 @@ export default function SeoSettingsPage() {
     });
   };
 
-  const validateIdentity = (data: SeoGlobalData): string | null => {
-    const urlRegex = /^(https?:\/\/)[^\s$.?#].[^\s]*$/i;
-    const twitterRegex = /^@[a-zA-Z0-9_]{1,15}$/;
-
-    if (data.siteUrl && data.siteUrl.trim()) {
-      if (!urlRegex.test(data.siteUrl.trim())) {
-        return 'Site URL must be a valid URL (starting with http:// or https://).';
-      }
-    }
-    if (data.googleAnalyticsId && data.googleAnalyticsId.trim()) {
-      const ga = data.googleAnalyticsId.trim().toUpperCase();
-      if (!/^(G-[A-Z0-9]+|UA-\d+-\d+)$/.test(ga)) {
-        return 'Google Analytics ID format should be G-XXXXXXXXXX or UA-XXXXXX-X.';
-      }
-    }
-    if (data.twitterHandle && data.twitterHandle.trim()) {
-      if (!twitterRegex.test(data.twitterHandle.trim())) {
-        return 'Twitter Creator Handle must start with @ and be alphanumeric (max 15 chars).';
-      }
-    }
-    if (data.defaultOgImage && data.defaultOgImage.trim()) {
-      if (!urlRegex.test(data.defaultOgImage.trim())) {
-        return 'Default Open Graph Image must be a valid URL (starting with http:// or https://).';
-      }
-    }
-
-    // Social Links
-    if (data.socialLinks && Array.isArray(data.socialLinks)) {
-      for (let i = 0; i < data.socialLinks.length; i++) {
-        const link = data.socialLinks[i];
-        const hasPlatform = link.platformName && link.platformName.trim();
-        const hasUrl = link.url && link.url.trim();
-
-        if (hasPlatform || hasUrl) {
-          if (!hasPlatform) {
-            return `Social Profile #${i + 1}: Platform Name is required when URL is provided.`;
-          }
-          if (!hasUrl) {
-            return `Social Profile #${i + 1}: URL is required when Platform Name is provided.`;
-          }
-          if (!urlRegex.test(link.url.trim())) {
-            return `Social Profile #${i + 1}: URL must be a valid URL (starting with http:// or https://).`;
-          }
-        }
-      }
-    }
-    return null;
-  };
-
-  const validateLocalSeo = (data: SeoGlobalData): string | null => {
-    const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-
-    if (data.businessPhone && data.businessPhone.trim()) {
-      if (!phoneRegex.test(data.businessPhone.trim())) {
-        return 'Main Contact Phone must be a valid phone number format.';
-      }
-    }
-    if (data.businessEmail && data.businessEmail.trim()) {
-      if (!emailRegex.test(data.businessEmail.trim())) {
-        return 'Main Inquiry Email must be a valid email format.';
-      }
-    }
-
-    // Locations
-    if (data.locations && Array.isArray(data.locations)) {
-      for (let i = 0; i < data.locations.length; i++) {
-        const loc = data.locations[i];
-        const prefix = `Location #${i + 1}:`;
-        const hasAnyField = 
-          (loc.locationName && loc.locationName.trim()) ||
-          (loc.phone && loc.phone.trim()) ||
-          (loc.hours && loc.hours.trim()) ||
-          (loc.address && loc.address.trim()) ||
-          (loc.city && loc.city.trim()) ||
-          (loc.zip && loc.zip.trim());
-
-        if (hasAnyField) {
-          if (!loc.locationName || !loc.locationName.trim()) {
-            return `${prefix} Location Tag Name is required.`;
-          }
-          if (loc.phone && loc.phone.trim() && !phoneRegex.test(loc.phone.trim())) {
-            return `${prefix} Phone must be a valid phone number format.`;
-          }
-          if (!loc.address || !loc.address.trim()) {
-            return `${prefix} Street Address is required.`;
-          }
-          if (!loc.city || !loc.city.trim()) {
-            return `${prefix} City is required.`;
-          }
-          if (!loc.zip || !loc.zip.trim()) {
-            return `${prefix} Postal Code is required.`;
-          }
-        }
-      }
-    }
-    return null;
-  };
-
-  const saveSection = async (sectionName: string, payload: Partial<SeoGlobalData>) => {
+  const handleSave = async () => {
     setSaving(true);
     try {
       const res = await fetch('/api/seo/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(formData)
       });
       const json = await res.json();
       if (json.success) {
-        toast({ title: `${sectionName} Settings Saved`, description: `${sectionName} parameters have been updated.` });
+        toast({ title: 'SEO Settings Saved', description: 'Global SEO parameters have been updated.' });
       } else {
         throw new Error(json.error || 'Failed to save settings');
       }
@@ -288,62 +189,6 @@ export default function SeoSettingsPage() {
       setSaving(false);
     }
   };
-
-  const handleSaveIdentity = () => {
-    const errorMsg = validateIdentity(formData);
-    if (errorMsg) {
-      toast({ title: 'Validation Error', description: errorMsg, variant: 'destructive' });
-      return;
-    }
-    const cleanedSocialLinks = formData.socialLinks.filter(
-      link => link.platformName.trim() || link.url.trim()
-    );
-    saveSection('Identity', {
-      siteName: formData.siteName,
-      siteUrl: formData.siteUrl,
-      googleAnalyticsId: formData.googleAnalyticsId,
-      searchConsoleVerification: formData.searchConsoleVerification,
-      twitterHandle: formData.twitterHandle,
-      defaultOgImage: formData.defaultOgImage,
-      socialLinks: cleanedSocialLinks
-    });
-  };
-
-  const handleSaveLocalSeo = () => {
-    const errorMsg = validateLocalSeo(formData);
-    if (errorMsg) {
-      toast({ title: 'Validation Error', description: errorMsg, variant: 'destructive' });
-      return;
-    }
-    const cleanedLocations = formData.locations.filter(
-      loc => 
-        loc.locationName.trim() ||
-        loc.phone.trim() ||
-        loc.hours.trim() ||
-        loc.address.trim() ||
-        loc.city.trim() ||
-        loc.zip.trim()
-    );
-    saveSection('Local SEO', {
-      businessName: formData.businessName,
-      businessPhone: formData.businessPhone,
-      businessEmail: formData.businessEmail,
-      locations: cleanedLocations
-    });
-  };
-
-  const handleSaveRobots = () => {
-    saveSection('robots.txt', {
-      robotsTxt: formData.robotsTxt
-    });
-  };
-
-  const handleSaveLlm = () => {
-    saveSection('llm.txt', {
-      llmTxt: formData.llmTxt
-    });
-  };
-
 
   if (authLoading || loading) {
     return (
@@ -360,6 +205,10 @@ export default function SeoSettingsPage() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">SEO Settings</h1>
           <p className="text-muted-foreground">Manage global search optimization configuration, social connections, robots rules, and AI parameters.</p>
         </div>
+        <Button onClick={handleSave} disabled={saving} className="gap-2 shrink-0">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save Settings
+        </Button>
       </div>
 
       <Tabs defaultValue="identity" className="space-y-6">
@@ -495,12 +344,6 @@ export default function SeoSettingsPage() {
               )}
             </CardContent>
           </Card>
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleSaveIdentity} disabled={saving} className="gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Identity Settings
-            </Button>
-          </div>
         </TabsContent>
 
         {/* LOCAL SEO */}
@@ -631,12 +474,6 @@ export default function SeoSettingsPage() {
               )}
             </CardContent>
           </Card>
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleSaveLocalSeo} disabled={saving} className="gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Local SEO Settings
-            </Button>
-          </div>
         </TabsContent>
 
         {/* ROBOTS.TXT */}
@@ -658,12 +495,6 @@ export default function SeoSettingsPage() {
               />
             </CardContent>
           </Card>
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleSaveRobots} disabled={saving} className="gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save robots.txt Directives
-            </Button>
-          </div>
         </TabsContent>
 
         {/* LLM.TXT */}
@@ -685,12 +516,6 @@ export default function SeoSettingsPage() {
               />
             </CardContent>
           </Card>
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleSaveLlm} disabled={saving} className="gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save llm.txt Directives
-            </Button>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
