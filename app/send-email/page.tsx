@@ -52,14 +52,46 @@ export default function SendEmailPage() {
   };
 
   const handleSend = async () => {
-    if (!to || !selectedTemplateId) {
-      toast({ title: 'Error', description: 'Recipient and Template are required.', variant: 'destructive' });
+    const toTrimmed = to.trim();
+    if (!toTrimmed) {
+      toast({ title: 'Error', description: 'Recipient email address is required.', variant: 'destructive' });
       return;
     }
 
-    if (to.includes(';')) {
+    if (!selectedTemplateId) {
+      toast({ title: 'Error', description: 'Template is required.', variant: 'destructive' });
+      return;
+    }
+
+    if (toTrimmed.includes(';')) {
       toast({ title: 'Error', description: 'Use commas to separate multiple email addresses.', variant: 'destructive' });
       return;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emails = toTrimmed.split(',').map(e => e.trim()).filter(Boolean);
+    
+    if (emails.length === 0) {
+      toast({ title: 'Error', description: 'Recipient email address is required.', variant: 'destructive' });
+      return;
+    }
+
+    const invalidEmails = emails.filter(e => !emailRegex.test(e));
+    if (invalidEmails.length > 0) {
+      toast({ title: 'Error', description: 'Invalid email address.', variant: 'destructive' });
+      return;
+    }
+
+    if (selectedTemplate && selectedTemplate.variables) {
+      const missingVariables = selectedTemplate.variables.filter(v => !variableData[v] || !variableData[v].trim());
+      if (missingVariables.length > 0) {
+        if (missingVariables.length === selectedTemplate.variables.length && selectedTemplate.variables.length > 1) {
+           toast({ title: 'Error', description: 'All template variables are required.', variant: 'destructive' });
+        } else {
+           toast({ title: 'Error', description: `${missingVariables[0]} is required.`, variant: 'destructive' });
+        }
+        return;
+      }
     }
 
     setSending(true);
@@ -166,7 +198,7 @@ export default function SendEmailPage() {
 
           <Button 
             onClick={handleSend} 
-            disabled={sending || !to || !selectedTemplateId} 
+            disabled={sending} 
             className="w-full gap-2 mt-4"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

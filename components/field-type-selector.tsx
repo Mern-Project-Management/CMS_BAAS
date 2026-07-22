@@ -20,7 +20,7 @@ interface FieldTypeSelectorProps {
 }
 
 const FIELD_GROUPS: Record<string, FieldType[]> = {
-  'Basic': ['Text', 'Textarea', 'Number', 'Boolean', 'Color', 'Dropdown', 'PageRoute'],
+  'Basic': ['Text', 'Textarea', 'Number', 'Boolean', 'Color', 'Dropdown', 'PageRoute', 'SocialLink', 'UrlLink', 'MobileNumber', 'Email'],
   'Date & Time': ['Date', 'DateTime'],
   'Media': ['File', 'Image', 'ImageArray'],
   'Advanced': ['JSON', 'Relation', 'Array', 'Editor'],
@@ -43,13 +43,13 @@ export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
           <ChevronDown className="w-4 h-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64 max-h-[min(80vh,24rem)] overflow-y-auto">
+      <DropdownMenuContent align="start" className="w-[520px] max-h-[300px] overflow-y-auto">
         {Object.entries(FIELD_GROUPS).map(([group, types]) => (
           <div key={group}>
-            <DropdownMenuLabel className="text-xs uppercase font-semibold text-muted-foreground">
+            <DropdownMenuLabel className="text-xs uppercase font-semibold text-muted-foreground px-2 pt-2">
               {group}
             </DropdownMenuLabel>
-            <DropdownMenuGroup>
+            <DropdownMenuGroup className="grid grid-cols-2 gap-1 p-1">
               {types.map((fieldType) => {
                 const typeInfo = FIELD_TYPES[fieldType];
 
@@ -66,9 +66,9 @@ export function FieldTypeSelector({ value, onChange }: FieldTypeSelectorProps) {
                   >
                     <span className="flex items-center gap-3 w-full">
                       {getFieldTypeIcon(fieldType)}
-                      <div className="flex-1">
-                        <div className="font-medium">{typeInfo.label}</div>
-                        <div className="text-xs text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{typeInfo.label}</div>
+                        <div className="text-xs text-muted-foreground truncate">
                           {typeInfo.description}
                         </div>
                       </div>

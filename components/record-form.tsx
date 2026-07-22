@@ -12,11 +12,16 @@ import { ColorField } from '@/components/color-field';
 import { useToast } from '@/hooks/use-toast';
 import { HierarchicalSelector } from '@/components/hierarchical-selector';
 import { PageRouteSelector } from '@/components/page-route-selector';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Field } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-
-import { FaqPageSelector } from '@/components/faq-page-selector';
+import { validateRecord } from '@/lib/validation-engine';
 
 const slugify = (str: string) =>
   str
@@ -30,20 +35,13 @@ type Props = {
   collectionId: string;
   fields: Field[];
   onCreated: () => void;
-  defaultValues?: Record<string, any>;
 };
 
-export function RecordForm({ collectionId, fields, onCreated, defaultValues }: Props) {
+export function RecordForm({ collectionId, fields, onCreated }: Props) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState<Record<string, any>>(defaultValues || {});
+  const [formData, setFormData] = useState<Record<string, any>>({});
   const [formKey, setFormKey] = useState(0);
-
-  const isFaqCollection = collectionId === 'faq' || collectionId === '6a477a863042d14bb0be8de2';
-  const [faqItems, setFaqItems] = useState<Array<{ question: string; ans: string }>>([
-    { question: '', ans: '' }
-  ]);
-  const [selectedPage, setSelectedPage] = useState<string>(defaultValues?.page || 'home');
 
   function updateField(name: string, value: any) {
     setFormData((prev) => {
@@ -67,34 +65,32 @@ export function RecordForm({ collectionId, fields, onCreated, defaultValues }: P
     e.preventDefault();
     setSubmitting(true);
     try {
-      let payload: any;
-      if (isFaqCollection) {
-        // Filter out empty items
-        const activeItems = faqItems.filter(item => item.question.trim() !== '' || item.ans.trim() !== '');
-        if (activeItems.length === 0) {
-          throw new Error('Please add at least one FAQ question and answer');
+      // Normalize form data: filter out empty array items for Array fields so we store clean arrays
+      const payload: Record<string, unknown> = {};
+      for (const field of fields) {
+        const v = formData[field.name];
+        if (field.field_type === 'Array') {
+          const arr = ensureArray(v);
+          payload[field.name] = arr.filter((s) => s.trim() !== '');
+        } else if (field.field_type === 'ImageArray') {
+          // Already an array of URL strings — store as-is
+          payload[field.name] = Array.isArray(v) ? v.filter(Boolean) : [];
+        } else {
+          payload[field.name] = v;
         }
-        payload = activeItems.map(item => ({
-          page: selectedPage,
-          question: item.question,
-          ans: item.ans
-        }));
-      } else {
-        // Normalize form data: filter out empty array items for Array fields so we store clean arrays
-        const normalPayload: Record<string, unknown> = {};
-        for (const field of fields) {
-          const v = formData[field.name];
-          if (field.field_type === 'Array') {
-            const arr = ensureArray(v);
-            normalPayload[field.name] = arr.filter((s) => s.trim() !== '');
-          } else if (field.field_type === 'ImageArray') {
-            // Already an array of URL strings — store as-is
-            normalPayload[field.name] = Array.isArray(v) ? v.filter(Boolean) : [];
-          } else {
-            normalPayload[field.name] = v;
-          }
-        }
-        payload = normalPayload;
+      }
+      // Validate the record payload using field rules
+      const validation = validateRecord(payload, fields);
+      if (!validation.valid) {
+        validation.errors.forEach((err) => {
+          toast({
+            title: 'Validation Error',
+            description: err.message,
+            variant: 'destructive',
+          });
+        });
+        setSubmitting(false);
+        return;
       }
 
       const res = await fetch(`/api/data/${collectionId}`, {
@@ -106,9 +102,8 @@ export function RecordForm({ collectionId, fields, onCreated, defaultValues }: P
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Failed to create record');
       }
-      toast({ title: isFaqCollection ? `${faqItems.length} FAQs created` : 'Record created', variant: 'success' });
-      setFormData(defaultValues || {});
-      setFaqItems([{ question: '', ans: '' }]);
+      toast({ title: 'Record created', variant: 'success' });
+      setFormData({});
       setFormKey((prev) => prev + 1);
       onCreated();
     } catch (err) {
@@ -130,18 +125,6 @@ export function RecordForm({ collectionId, fields, onCreated, defaultValues }: P
 
   function renderField(field: Field) {
     const value = formData[field.name] ?? '';
-    const isFaqPageField = field.name === 'page' && (collectionId === 'faq' || collectionId === '6a477a863042d14bb0be8de2');
-    
-    if (isFaqPageField) {
-      return (
-        <FaqPageSelector
-          value={value}
-          onChange={(val) => updateField(field.name, val)}
-          required={field.is_required}
-        />
-      );
-    }
-
     switch (field.field_type) {
       case 'Array': {
         const items = ensureArray(formData[field.name]);
@@ -317,6 +300,57 @@ export function RecordForm({ collectionId, fields, onCreated, defaultValues }: P
             fieldName={field.name}
           />
         );
+      case 'Dropdown': {
+        const options = Array.isArray(field.dropdown_options) ? field.dropdown_options : [];
+        return (
+          <Select
+            value={value || ''}
+            onValueChange={(val) => updateField(field.name, val)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={`Select ${field.display_name}...`} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
+      case 'Email':
+        return (
+          <Input
+            type="email"
+            value={value}
+            onChange={(e) => updateField(field.name, e.target.value)}
+            required={field.is_required}
+            placeholder={field.display_name}
+          />
+        );
+      case 'UrlLink':
+      case 'SocialLink':
+        return (
+          <Input
+            type="url"
+            value={value}
+            onChange={(e) => updateField(field.name, e.target.value)}
+            required={field.is_required}
+            placeholder={field.display_name}
+          />
+        );
+      case 'MobileNumber':
+        return (
+          <Input
+            type="tel"
+            value={value}
+            onChange={(e) => updateField(field.name, e.target.value)}
+            required={field.is_required}
+            placeholder={field.display_name}
+          />
+        );
       default:
         return (
           <Input
@@ -327,118 +361,6 @@ export function RecordForm({ collectionId, fields, onCreated, defaultValues }: P
           />
         );
     }
-  }
-
-  if (isFaqCollection) {
-    return (
-      <form 
-        key={formKey} 
-        className="space-y-6" 
-        onSubmit={handleSubmit}
-        noValidate
-        autoComplete="off"
-      >
-        <div className="space-y-4">
-          {!defaultValues?.page ? (
-            <div className="space-y-2 max-w-md">
-              <label className="text-sm font-semibold text-primary/80 uppercase tracking-wide">
-                Page <span className="text-destructive">*</span>
-              </label>
-              <FaqPageSelector
-                value={selectedPage}
-                onChange={(val) => setSelectedPage(val)}
-                required
-              />
-              <p className="text-xs text-muted-foreground">Select which page this batch of FAQs belongs to.</p>
-            </div>
-          ) : (
-            <div className="bg-primary/5 p-3 rounded-lg border border-primary/10 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-primary/70 uppercase tracking-wide block">Target Page</span>
-                <span className="font-mono text-sm font-bold text-foreground">/{defaultValues.page.replace(/^\//, '')}</span>
-              </div>
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/10">Page-Locked</Badge>
-            </div>
-          )}
-
-          <div className="space-y-4 pt-4 border-t border-border/40">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">FAQ Entries ({faqItems.length})</h3>
-            
-            {faqItems.map((item, idx) => (
-              <div key={idx} className="relative p-4 rounded-xl border border-border bg-card shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-muted-foreground">FAQ #{idx + 1}</span>
-                  {faqItems.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setFaqItems(prev => prev.filter((_, i) => i !== idx));
-                      }}
-                      className="text-destructive hover:bg-destructive/10 h-8 px-2.5"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Remove
-                    </Button>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium">Question</label>
-                    <Input
-                      value={item.question}
-                      onChange={(e) => {
-                        const next = [...faqItems];
-                        next[idx].question = e.target.value;
-                        setFaqItems(next);
-                      }}
-                      placeholder="e.g. What is your warranty policy?"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium">Answer</label>
-                    <Textarea
-                      value={item.ans}
-                      onChange={(e) => {
-                        const next = [...faqItems];
-                        next[idx].ans = e.target.value;
-                        setFaqItems(next);
-                      }}
-                      placeholder="e.g. We offer a 1-year comprehensive warranty on all machinery parts..."
-                      rows={3}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setFaqItems(prev => [...prev, { question: '', ans: '' }])}
-            className="w-full sm:w-auto gap-2 border-dashed mt-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Another FAQ Item
-          </Button>
-        </div>
-
-        <Button type="submit" disabled={submitting} className="w-full sm:w-auto mt-6 px-8 shadow-sm">
-          {submitting ? (
-            <span className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
-              Saving FAQs…
-            </span>
-          ) : 'Save FAQs'}
-        </Button>
-      </form>
-    );
   }
 
   return (

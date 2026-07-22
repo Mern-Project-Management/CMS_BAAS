@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Field, ValidationRule } from '@/lib/types';
 
 interface FieldRulesPanelProps {
@@ -19,7 +19,67 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
   const [validationRules, setValidationRules] = useState<ValidationRule[]>(
     Array.isArray(field.validation_rules) ? (field.validation_rules as ValidationRule[]) : []
   );
+
+  useEffect(() => {
+    setValidationRules(
+      Array.isArray(field.validation_rules) ? (field.validation_rules as ValidationRule[]) : []
+    );
+  }, [field.validation_rules]);
+
   const [newRule, setNewRule] = useState<ValidationRule>({ type: 'min' });
+
+  const ALL_OPTIONS = [
+    { value: 'min', label: 'Minimum' },
+    { value: 'max', label: 'Maximum' },
+    { value: 'pattern', label: 'Pattern' },
+    { value: 'length', label: 'Length' },
+    { value: 'email', label: 'Email Format' },
+    { value: 'url', label: 'URL Format' },
+    { value: 'social_link', label: 'Social Media Link (Facebook, Twitter, LinkedIn, etc.)' },
+    { value: 'mobile', label: 'Mobile Number' },
+    { value: 'alphanumeric', label: 'Alphanumeric (Letters, Numbers, Spaces, Hyphens & Punctuation)' },
+    { value: 'slug', label: 'Slug (lowercase, numbers & hyphens only)' },
+    { value: 'no_script_tags', label: 'No Script/HTML Tags' },
+    { value: 'json_ld', label: 'JSON-LD Schema (schema.org)' },
+    { value: 'custom', label: 'Custom' },
+  ] as const;
+
+  const isSlugField =
+    (field.field_type === 'Text' || field.field_type === 'Textarea') &&
+    (field.name === 'slug' || !!field.name?.endsWith('_slug'));
+
+  const isSchemaField =
+    (field.field_type === 'Text' || field.field_type === 'Textarea' || field.field_type === 'JSON') &&
+    (field.name === 'schema' || !!field.name?.endsWith('_schema'));
+
+  const isTextOrTextarea = field.field_type === 'Text' || field.field_type === 'Textarea';
+
+  const availableOptions = ALL_OPTIONS.filter((opt) => {
+    // Hide already configured rules
+    if (validationRules.some((r) => r.type === opt.value)) {
+      return false;
+    }
+    // Hide auto-applied rules for specific fields
+    if (opt.value === 'slug' && isSlugField) return false;
+    if (opt.value === 'json_ld' && isSchemaField) return false;
+    if (opt.value === 'no_script_tags' && isTextOrTextarea) return false;
+    if (opt.value === 'alphanumeric' && isTextOrTextarea) return false;
+
+    return true;
+  });
+
+  useEffect(() => {
+    if (availableOptions.length > 0) {
+      const exists = availableOptions.some(o => o.value === newRule.type);
+      if (!exists) {
+        setNewRule({
+          type: availableOptions[0].value as any,
+          value: '',
+          message: '',
+        });
+      }
+    }
+  }, [validationRules, availableOptions, newRule.type]);
 
   const handleRuleChange = (rules: ValidationRule[]) => {
     setValidationRules(rules);
@@ -29,7 +89,6 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
   const addValidationRule = () => {
     if (newRule.type) {
       handleRuleChange([...validationRules, newRule]);
-      setNewRule({ type: 'min' });
     }
   };
 
@@ -109,27 +168,115 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
           </TabsContent>
 
           <TabsContent value="validation" className="space-y-4">
+            {/* ── Default limits banner ── */}
+            {(['Text', 'Textarea', 'Editor'] as const).includes(field.field_type as any) && (() => {
+              const DEFAULTS: Record<string, { min: number; max: number }> = {
+                Text:     { min: 3,  max: 100   },
+                Textarea: { min: 10, max: 5000  },
+                Editor:   { min: 20, max: 50000 },
+              };
+              const d = DEFAULTS[field.field_type as string];
+              const hasMin       = validationRules.some((r) => r.type === 'min');
+              const hasMax       = validationRules.some((r) => r.type === 'max');
+              const hasAlphanum  = validationRules.some((r) => r.type === 'alphanumeric');
+              const hasPattern   = validationRules.some((r) => r.type === 'pattern');
+              const showLetterRule = field.field_type === 'Text' || field.field_type === 'Textarea';
+              if (!d) return null;
+              return (
+                <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3 text-xs space-y-2">
+                  <p className="font-semibold text-blue-700 dark:text-blue-300">
+                    📏 Default Validation Rules (applied automatically)
+                  </p>
+                  <div className="flex gap-4 text-blue-600 dark:text-blue-400">
+                    <span>
+                      Min: <strong>{d.min}</strong>{' '}
+                      {hasMin && <span className="text-orange-500">(overridden)</span>}
+                    </span>
+                    <span>
+                      Max: <strong>{d.max}</strong>{' '}
+                      {hasMax && <span className="text-orange-500">(overridden)</span>}
+                    </span>
+                  </div>
+                  {showLetterRule && (
+                    <div className="text-blue-600 dark:text-blue-400">
+                      🔤 Must contain at least one letter — pure numbers (e.g. <code>12213</code>) are rejected{' '}
+                      {(hasAlphanum || hasPattern) && <span className="text-orange-500">(overridden by your rule)</span>}
+                    </div>
+                  )}
+                  <p className="text-blue-500 dark:text-blue-400 pt-0.5">
+                    Add <strong>Minimum</strong>, <strong>Maximum</strong>, <strong>Alphanumeric</strong>, or <strong>Pattern</strong> rules below to override these defaults.
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* ── Auto slug banner ── */}
+            {(field.field_type === 'Text' || field.field_type === 'Textarea') &&
+              (field.name === 'slug' || (typeof field.name === 'string' && field.name.endsWith('_slug'))) && (() => {
+                const hasSlugOverride = validationRules.some(
+                  (r) => r.type === 'slug' || r.type === 'pattern' || r.type === 'alphanumeric'
+                );
+                return (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3 text-xs space-y-1.5">
+                    <p className="font-semibold text-amber-700 dark:text-amber-300">
+                      🔗 Slug Validation (auto-applied)
+                    </p>
+                    <p className="text-amber-600 dark:text-amber-400">
+                      Only <strong>lowercase letters</strong>, <strong>numbers</strong>, and <strong>hyphens</strong> allowed.
+                      Spaces, uppercase, special characters, and script tags are all rejected.{' '}
+                      {hasSlugOverride && <span className="text-orange-500">(overridden by your rule)</span>}
+                    </p>
+                    <p className="text-amber-500">
+                      e.g. <code>our-services</code>, <code>service-123</code>
+                    </p>
+                  </div>
+                );
+              })()}
+            {/* ── Auto schema banner ── */}
+            {(field.field_type === 'Text' || field.field_type === 'Textarea' || field.field_type === 'JSON') &&
+              (field.name === 'schema' || (typeof field.name === 'string' && field.name.endsWith('_schema'))) && (() => {
+                const hasSchemaOverride = validationRules.some(
+                  (r) => r.type === 'json_ld' || r.type === 'pattern' || r.type === 'custom'
+                );
+                return (
+                  <div className="rounded-md border border-purple-200 bg-purple-50 dark:bg-purple-950/30 dark:border-purple-800 p-3 text-xs space-y-1.5">
+                    <p className="font-semibold text-purple-700 dark:text-purple-300">
+                      📄 JSON-LD Schema Validation (auto-applied)
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">
+                      Only valid <strong>JSON-LD format</strong> referencing <code>schema.org</code> with a valid <code>@context</code> and <code>@type</code> is allowed.
+                      HTML, plain text, and malformed JSON structures are rejected.{' '}
+                      {hasSchemaOverride && <span className="text-orange-500">(overridden by your rule)</span>}
+                    </p>
+                    <p className="text-purple-500">
+                      e.g. <code>{"{"}"@context": "https://schema.org", "@type": "Service", ...{"}"}</code>
+                    </p>
+                  </div>
+                );
+              })()}
             <div className="space-y-3">
               {Array.isArray(validationRules) && validationRules.map((rule, index) => (
                 <div key={index} className="flex items-end gap-2">
                   <div className="flex-1 space-y-1">
                     <Label className="text-xs">{rule.type}</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Value"
-                        value={rule.value?.toString() || ''}
-                        onChange={(e) => {
-                          const updated = [...validationRules];
-                          updated[index] = {
-                            ...rule,
-                            value: isNaN(Number(e.target.value))
-                              ? e.target.value
-                              : Number(e.target.value),
-                          };
-                          handleRuleChange(updated);
-                        }}
-                      />
-                    </div>
+                    {!['email', 'url', 'alphanumeric', 'no_script_tags', 'json_ld', 'slug', 'social_link', 'mobile'].includes(rule.type) && (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Value"
+                          value={rule.value?.toString() || ''}
+                          onChange={(e) => {
+                            const updated = [...validationRules];
+                            updated[index] = {
+                              ...rule,
+                              value: isNaN(Number(e.target.value))
+                                ? e.target.value
+                                : Number(e.target.value),
+                            };
+                            handleRuleChange(updated);
+                          }}
+                        />
+                      </div>
+                    )}
                     <Input
                       placeholder="Error message"
                       value={rule.message || ''}
@@ -142,6 +289,7 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
                     />
                   </div>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => removeValidationRule(index)}
@@ -151,38 +299,84 @@ export function FieldRulesPanel({ field, onChange }: FieldRulesPanelProps) {
                 </div>
               ))}
 
-              <div className="pt-2 space-y-2 bg-muted/30 p-3 rounded">
-                <Label htmlFor="rule-type" className="text-xs">
-                  Add Validation Rule
-                </Label>
-                <select
-                  id="rule-type"
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                  value={newRule.type}
-                  onChange={(e) =>
-                    setNewRule({
-                      ...newRule,
-                      type: e.target.value as ValidationRule['type'],
-                    })
-                  }
-                >
-                  <option value="min">Minimum</option>
-                  <option value="max">Maximum</option>
-                  <option value="pattern">Pattern</option>
-                  <option value="length">Length</option>
-                  <option value="email">Email Format</option>
-                  <option value="url">URL Format</option>
-                  <option value="custom">Custom</option>
-                </select>
-                <Button
-                  onClick={addValidationRule}
-                  size="sm"
-                  className="w-full gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Rule
-                </Button>
-              </div>
+              {availableOptions.length > 0 ? (
+                <div className="pt-2 space-y-2 bg-muted/30 p-3 rounded">
+                  <Label htmlFor="rule-type" className="text-xs">
+                    Add Validation Rule
+                  </Label>
+                  <select
+                    id="rule-type"
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                    value={newRule.type}
+                    onChange={(e) =>
+                      setNewRule({
+                        type: e.target.value as ValidationRule['type'],
+                        value: '',
+                        message: '',
+                      })
+                    }
+                  >
+                    {availableOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  {['min', 'max', 'length', 'pattern', 'custom'].includes(newRule.type || '') && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Rule Value</Label>
+                      <Input
+                        type={['min', 'max', 'length'].includes(newRule.type || '') ? 'number' : 'text'}
+                        placeholder={
+                          newRule.type === 'min' || newRule.type === 'max'
+                            ? 'e.g. 5'
+                            : newRule.type === 'length'
+                            ? 'e.g. 10'
+                            : 'Rule Value'
+                        }
+                        value={newRule.value?.toString() || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setNewRule((prev) => ({
+                            ...prev,
+                            value: ['min', 'max', 'length'].includes(prev.type || '')
+                              ? val === '' ? '' : Number(val)
+                              : val,
+                          }));
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Custom Error Message (optional)</Label>
+                    <Input
+                      placeholder="e.g. Must be at least 5 characters"
+                      value={newRule.message || ''}
+                      onChange={(e) =>
+                        setNewRule((prev) => ({
+                          ...prev,
+                          message: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={addValidationRule}
+                    size="sm"
+                    className="w-full gap-2 mt-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Rule
+                  </Button>
+                </div>
+              ) : (
+                <div className="pt-2 bg-muted/20 p-3 rounded text-center text-xs text-muted-foreground border border-dashed">
+                  All available validation rules have been configured for this field.
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

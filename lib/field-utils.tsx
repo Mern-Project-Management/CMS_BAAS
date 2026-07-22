@@ -15,6 +15,9 @@ import {
   AlignLeft,
   Minus,
   Navigation,
+  Phone,
+  Share2,
+  Mail,
 } from 'lucide-react';
 
 export const FIELD_TYPES: Record<FieldType, { label: string; description: string }> = {
@@ -34,6 +37,10 @@ export const FIELD_TYPES: Record<FieldType, { label: string; description: string
   Color: { label: 'Color', description: 'Hex color picker for backgrounds and text' },
   Dropdown: { label: 'Dropdown', description: 'Select from predefined options' },
   PageRoute: { label: 'Page Route', description: 'Select dynamic and static page routes' },
+  SocialLink: { label: 'Social Media Link', description: 'Link to social media profile' },
+  UrlLink: { label: 'URL Link', description: 'Standard URL link' },
+  MobileNumber: { label: 'Mobile Number', description: 'Phone or mobile number' },
+  Email: { label: 'Email', description: 'Valid email address' },
 };
 
 export function getFieldTypeIcon(type: FieldType) {
@@ -71,6 +78,14 @@ export function getFieldTypeIcon(type: FieldType) {
       return <Minus {...iconProps} />;
     case 'PageRoute':
       return <Navigation {...iconProps} />;
+    case 'SocialLink':
+      return <Share2 {...iconProps} />;
+    case 'UrlLink':
+      return <Link2 {...iconProps} />;
+    case 'MobileNumber':
+      return <Phone {...iconProps} />;
+    case 'Email':
+      return <Mail {...iconProps} />;
     default:
       return <Type {...iconProps} />;
   }

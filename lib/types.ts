@@ -1,12 +1,12 @@
 // Field Types
-export type FieldType = 'Text' | 'Textarea' | 'Number' | 'Boolean' | 'Date' | 'DateTime' | 'File' | 'Image' | 'ImageArray' | 'JSON' | 'Relation' | 'Array' | 'Editor' | 'Color' | 'Dropdown' | 'PageRoute';
+export type FieldType = 'Text' | 'Textarea' | 'Number' | 'Boolean' | 'Date' | 'DateTime' | 'File' | 'Image' | 'ImageArray' | 'JSON' | 'Relation' | 'Array' | 'Editor' | 'Color' | 'Dropdown' | 'PageRoute' | 'SocialLink' | 'UrlLink' | 'MobileNumber' | 'Email';
 
 // Field Rules
 export type FieldRule = 'Required' | 'Unique' | 'Encrypted' | 'Validation';
 
 // Validation Rule Types
 export interface ValidationRule {
-  type: 'min' | 'max' | 'pattern' | 'length' | 'email' | 'url' | 'custom';
+  type: 'min' | 'max' | 'pattern' | 'length' | 'email' | 'url' | 'custom' | 'alphanumeric' | 'no_script_tags' | 'json_ld' | 'slug' | 'social_link' | 'mobile';
   value?: string | number;
   message?: string;
 }
