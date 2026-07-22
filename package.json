@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3032",
+    "dev": "next dev --port 3012",
     "build": "next build",
-    "start": "next start --port 3032",
+    "start": "next start --port 3012",
     "lint": "eslint .",
     "seed:default-user": "node scripts/seed-default-user.js",
     "seed:superadmin": "node scripts/seed-superadmin.js",

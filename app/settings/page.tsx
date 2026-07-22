@@ -145,7 +145,7 @@ export default function SettingsPage() {
                 name="db_name"
                 value={formData.db_name}
                 onChange={handleChange}
-                placeholder="ostech"
+                placeholder="yourcompany"
               />
             </div>
           </div>

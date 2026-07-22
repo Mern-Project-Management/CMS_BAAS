@@ -8,7 +8,7 @@ import type { ApiResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-const COLORS_FILE = join(process.cwd(), '..', 'OSTECH_WEB', 'src', 'app', 'assets', 'sass', 'utilities', '_colors.scss');
+const COLORS_FILE = join(process.cwd(), '..', 'YOUR_WEB', 'src', 'app', 'assets', 'sass', 'utilities', '_colors.scss');
 
 // Color palette structure
 interface ColorPalette {

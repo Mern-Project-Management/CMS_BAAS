@@ -32,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans h-screen overflow-hidden bg-background text-foreground`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans h-screen overflow-hidden bg-background text-foreground`} suppressHydrationWarning>
         <AdminThemeLoader />
         <SidebarProvider>
           <div className="flex h-full overflow-hidden flex-col md:flex-row">

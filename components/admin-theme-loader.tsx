@@ -11,7 +11,10 @@ export function AdminThemeLoader() {
   // Fetch favicon once on mount
   useEffect(() => {
     fetch('/api/settings')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('API failed');
+        return res.json();
+      })
       .then(json => {
         if (json.success && json.data?.favicon_url) {
           const favicon = json.data.favicon_url;
@@ -108,7 +111,10 @@ export function AdminThemeLoader() {
 
     // 2. Fallback to API check just in case
     fetch('/api/colors', { cache: 'no-store' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('API failed');
+        return res.json();
+      })
       .then(data => {
         if (data && data.success && data.data && data.data.colors) {
           applyAdminColors(data.data.colors);

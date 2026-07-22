@@ -131,7 +131,7 @@ const adminHtmlContent = (data: CareerApplicationData) => `
       </div>
       <div class="footer">
         This is an automated notification from your website's career application form.<br>
-        &copy; ${new Date().getFullYear()} OSTECH Manufacturing. All rights reserved.
+        &copy; ${new Date().getFullYear()} Your Company. All rights reserved.
       </div>
     </div>
   </body>
@@ -195,8 +195,8 @@ const clientHtmlContent = (data: CareerApplicationData) => `
         </div>
       </div>
       <div class="footer">
-        This is an automated confirmation from OSTECH Manufacturing.<br>
-        &copy; ${new Date().getFullYear()} OSTECH Manufacturing. All rights reserved.
+        This is an automated confirmation from Your Company.<br>
+        &copy; ${new Date().getFullYear()} Your Company. All rights reserved.
       </div>
     </div>
   </body>
@@ -330,7 +330,7 @@ export async function POST(request: NextRequest) {
         });
 
         await transporter.sendMail({
-          from: `"OSTECH Manufacturing" <${adminEmail}>`,
+          from: `"Your Company" <${adminEmail}>`,
           to: email,
           subject: `Thank you for your application - ${position}`,
           replyTo: adminEmail,
