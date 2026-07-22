@@ -17,6 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-client';
 import { ChevronLeft, Edit2, Calendar, Clock, Plus, Settings } from 'lucide-react';
 import type { Collection, Field } from '@/lib/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // ── Event status helpers ──────────────────────────────────────────────────────
 
@@ -73,6 +80,26 @@ export default function CollectionDetailPage() {
   // Events status filter (only active when collection name is 'events')
   const isEventsCollection = resolvedId === 'events' || collection?.name === 'events';
   const [eventStatusFilter, setEventStatusFilter] = useState<EventStatus>('upcoming');
+
+  // FAQ page filter (only active when collection name is 'faq')
+  const isFaqCollection = resolvedId === 'faq' || collection?.name === 'faq';
+  const [faqPageFilter, setFaqPageFilter] = useState<string>('all');
+
+  const faqFilteredRecords = useMemo(() => {
+    if (!isFaqCollection || faqPageFilter === 'all') return records;
+    return records.filter((r) => r.page === faqPageFilter);
+  }, [records, isFaqCollection, faqPageFilter]);
+
+  const faqUniquePages = useMemo(() => {
+    if (!isFaqCollection) return [];
+    const pagesSet = new Set<string>();
+    records.forEach((r) => {
+      if (r.page) {
+        pagesSet.add(String(r.page));
+      }
+    });
+    return Array.from(pagesSet).sort();
+  }, [records, isFaqCollection]);
 
   // Detect if this collection has a hierarchy (a Relation field pointing to self or named 'parent')
   const parentRelationField = fields.find(
@@ -397,6 +424,28 @@ export default function CollectionDetailPage() {
                     </div>
                   )}
 
+                  {/* ── FAQ page filter dropdown ── */}
+                  {isFaqCollection && records.length > 0 && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/40 max-w-xs">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+                        Filter by Page:
+                      </span>
+                      <Select value={faqPageFilter} onValueChange={setFaqPageFilter}>
+                        <SelectTrigger className="h-8 text-xs bg-white">
+                          <SelectValue placeholder="All pages" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="all">All Pages</SelectItem>
+                          {faqUniquePages.map((pageVal) => (
+                            <SelectItem key={pageVal} value={pageVal}>
+                              {pageVal}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {parentFieldName ? (
                     <div className="space-y-10 pt-6">
                       <div className="space-y-4">
@@ -461,7 +510,13 @@ export default function CollectionDetailPage() {
                     <RecordsTable
                       collectionId={collectionId}
                       fields={fields}
-                      records={isEventsCollection ? eventFilteredRecords : records}
+                      records={
+                        isEventsCollection
+                          ? eventFilteredRecords
+                          : isFaqCollection
+                          ? faqFilteredRecords
+                          : records
+                      }
                       hiddenFields={collection.hidden_fields || []}
                       onDelete={() => setRecordRefresh((p) => p + 1)}
                       onUpdate={() => setRecordRefresh((p) => p + 1)}

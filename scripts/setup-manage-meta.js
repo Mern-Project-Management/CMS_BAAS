@@ -2,7 +2,7 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config({ path: '.env' });
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || 'ostech';
+const dbName = process.env.MONGODB_DB || 'CMS';
 const COLLECTION_NAME = 'manage-meta';
 
 async function setup() {
@@ -69,194 +69,128 @@ async function setup() {
     const pages = [
       {
         slug: '/',
-        meta_title: 'Wiretex | Leading Wire & Cable Manufacturer in India',
-        meta_description: 'Wiretex is a trusted wire and cable manufacturer in India, delivering premium industrial wires, customized cable solutions, advanced manufacturing, and global quality standards.',
-        keywords: 'wire manufacturer india, cable manufacturer, industrial wire supplier, electrical wires, wiretex, cable solutions, wire manufacturing company',
+        meta_title: 'Ostech | Premium Packaging Machinery & Conveyor Manufacturer',
+        meta_description: 'Ostech is a leading manufacturer of premium packaging machinery, conveyor systems, case packers, and custom industrial automation solutions in India.',
+        keywords: 'conveyor manufacturer, case packer manufacturer, packaging machinery, industrial conveyors, ostech, automation solutions, machine manufacturing company',
         schema: {
           "@context": "https://schema.org",
           "@type": "WebPage",
-          "name": "Wiretex Home",
-          "url": "https://www.wiretex.com/",
-          "description": "Leading wire and cable manufacturer in India."
+          "name": "Ostech Home",
+          "url": "https://www.ostech.com/",
+          "description": "Leading manufacturer of premium packaging machinery and conveyor systems."
         }
       },
       {
         slug: '/about-us',
-        meta_title: 'About Wiretex | Trusted Wire Manufacturing Company',
-        meta_description: 'Learn about Wiretex, a leading wire manufacturing company committed to innovation, quality, precision engineering, and customer-focused wire solutions.',
-        keywords: 'about wiretex, wire company, wire manufacturing industry, industrial wire manufacturer',
+        meta_title: 'About Ostech | Trusted Packaging Machinery & Conveyor Company',
+        meta_description: 'Learn about Ostech, a leading packaging machinery and conveyor manufacturing company committed to innovation, precision engineering, and custom automation.',
+        keywords: 'about ostech, conveyor company, packaging machinery industry, industrial machine manufacturer',
         schema: {
           "@context": "https://schema.org",
           "@type": "AboutPage",
-          "name": "About Wiretex",
-          "url": "https://www.wiretex.com/about-us"
+          "name": "About Ostech",
+          "url": "https://www.ostech.com/about-us"
+        }
+      },
+      {
+        slug: '/our-capabilities',
+        meta_title: 'Our Capabilities | Precision Machinery & Automation | Ostech',
+        meta_description: 'Discover Ostech\'s advanced manufacturing capabilities, high-speed conveyor systems, precision case packers, and custom automation design.',
+        keywords: 'manufacturing capabilities, custom conveyors, case packer automation, industrial automation, ostech capabilities',
+        schema: {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Our Capabilities",
+          "url": "https://www.ostech.com/our-capabilities"
         }
       },
       {
         slug: '/products',
-        meta_title: 'Wire & Cable Products | Industrial Wire Solutions',
-        meta_description: 'Explore Wiretex product range including industrial wires, specialty cables, custom wire solutions, and high-performance electrical conductors.',
-        keywords: 'industrial wires, electrical cables, specialty wire products, cable products, wire solutions',
+        meta_title: 'Packaging Machinery & Conveyors | Ostech Products',
+        meta_description: 'Explore Ostech\'s range of packaging machines, advanced conveyor systems, case packers, and custom product handling automation.',
+        keywords: 'industrial conveyors, case packers, packaging machines, product handling, custom machinery',
         schema: {
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          "name": "Wiretex Products",
-          "url": "https://www.wiretex.com/products",
+          "name": "Ostech Products",
+          "url": "https://www.ostech.com/products",
           "mainEntity": {
             "@type": "ItemList",
-            "name": "Wire & Cable Products"
+            "name": "Packaging Machinery & Conveyors"
           }
         }
       },
       {
-        slug: '/services',
-        meta_title: 'Wire Manufacturing Services | Custom Cable Solutions',
-        meta_description: 'Wiretex offers custom wire manufacturing, cable design, engineering support, quality testing, and industry-specific wire solutions.',
-        keywords: 'wire manufacturing services, custom cables, wire engineering, cable testing services',
+        slug: '/categories',
+        meta_title: 'Machinery Categories | Conveyors, Case Packers & Packers | Ostech',
+        meta_description: 'Browse our industrial machinery product categories including custom conveyor systems, automated case packers, and end-of-line packaging systems.',
+        keywords: 'conveyor categories, case packer categories, packaging machines, industrial automation categories',
         schema: {
           "@context": "https://schema.org",
-          "@type": "Service",
-          "name": "Wire Manufacturing Services",
-          "provider": {
-            "@type": "Organization",
-            "name": "Wiretex"
-          }
+          "@type": "CollectionPage",
+          "name": "Machinery Categories",
+          "url": "https://www.ostech.com/categories"
         }
       },
       {
         slug: '/blogs',
-        meta_title: 'Wire Industry Insights & Blogs | Wiretex',
-        meta_description: 'Stay updated with the latest wire manufacturing trends, industry insights, technology innovations, and cable solution guides from Wiretex.',
-        keywords: 'wire industry blog, cable manufacturing insights, electrical wire news, wire technology',
+        meta_title: 'Packaging & Automation Industry Insights | Ostech Blog',
+        meta_description: 'Stay updated with the latest packaging machinery trends, conveyor innovations, automation advancements, and engineering guides from Ostech.',
+        keywords: 'packaging industry blog, conveyor system insights, automation news, machine engineering',
         schema: {
           "@context": "https://schema.org",
           "@type": "Blog",
-          "name": "Wiretex Blog",
-          "url": "https://www.wiretex.com/blogs"
-        }
-      },
-      {
-        slug: '/careers',
-        meta_title: 'Careers at Wiretex | Join Our Manufacturing Team',
-        meta_description: 'Explore career opportunities at Wiretex and become part of a growing team focused on innovation, engineering excellence, and manufacturing leadership.',
-        keywords: 'wiretex careers, manufacturing jobs, engineering careers, wire industry jobs',
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          "name": "Careers",
-          "url": "https://www.wiretex.com/careers"
+          "name": "Ostech Blog",
+          "url": "https://www.ostech.com/blogs"
         }
       },
       {
         slug: '/contact',
-        meta_title: 'Contact Wiretex | Wire & Cable Manufacturing Experts',
-        meta_description: 'Get in touch with Wiretex for wire manufacturing inquiries, custom cable requirements, technical support, and partnership opportunities.',
-        keywords: 'contact wiretex, wire manufacturer contact, cable supplier contact',
+        meta_title: 'Contact Ostech | Packaging Machinery & Conveyor Experts',
+        meta_description: 'Get in touch with Ostech for packaging machinery inquiries, custom conveyor requirements, automation support, and business partnerships.',
+        keywords: 'contact ostech, conveyor supplier contact, packaging machine manufacturer contact',
         schema: {
           "@context": "https://schema.org",
           "@type": "ContactPage",
-          "name": "Contact Wiretex",
-          "url": "https://www.wiretex.com/contact"
+          "name": "Contact Ostech",
+          "url": "https://www.ostech.com/contact"
         }
       },
       {
-        slug: '/faq',
-        meta_title: 'Frequently Asked Questions | Wiretex',
-        meta_description: 'Find answers to common questions about Wiretex products, manufacturing capabilities, quality standards, certifications, and services.',
-        keywords: 'wire faq, cable faq, wire manufacturing questions, wiretex support',
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "What products does Wiretex manufacture?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Wiretex manufactures industrial wires, specialty cables and custom cable solutions."
-              }
-            }
-          ]
-        }
-      },
-      {
-        slug: '/global-presence',
-        meta_title: 'Global Presence | International Wire Supply Network',
-        meta_description: 'Discover Wiretex global presence, export capabilities, international partnerships, and worldwide delivery of premium wire solutions.',
-        keywords: 'global wire supplier, wire exports, international cable manufacturer, global presence',
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          "name": "Wiretex Global Presence",
-          "url": "https://www.wiretex.com/global-presence"
-        }
-      },
-      {
-        slug: '/industry-solutions',
-        meta_title: 'Industry Solutions | Wire Applications Across Industries',
-        meta_description: 'Wiretex provides specialized wire and cable solutions for automotive, infrastructure, energy, telecommunications, and industrial sectors.',
-        keywords: 'industry wire solutions, automotive wires, energy cables, industrial wire applications',
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "Service",
-          "name": "Industry Wire Solutions",
-          "provider": {
-            "@type": "Organization",
-            "name": "Wiretex"
-          }
-        }
-      },
-      {
-        slug: '/manufacturing-infrastructure',
-        meta_title: 'Manufacturing Infrastructure | Advanced Wire Production',
-        meta_description: 'Explore Wiretex state-of-the-art manufacturing infrastructure, modern machinery, quality control systems, and production excellence.',
-        keywords: 'wire manufacturing plant, cable production facility, manufacturing infrastructure',
+        slug: '/resources',
+        meta_title: 'Industrial Resources, Catalogues & Manuals | Ostech',
+        meta_description: 'Access Ostech product catalogues, machinery brochures, operational manuals, and engineering resources for conveyors and case packers.',
+        keywords: 'machinery resources, conveyor catalogue, case packer manual, engineering guides',
         schema: {
           "@context": "https://schema.org",
           "@type": "WebPage",
-          "name": "Manufacturing Infrastructure",
-          "url": "https://www.wiretex.com/manufacturing-infrastructure"
-        }
-      },
-      {
-        slug: '/quality-certification',
-        meta_title: 'Quality Certifications | Certified Wire Manufacturing',
-        meta_description: 'Wiretex follows stringent quality standards and certifications to ensure reliable, safe, and high-performance wire and cable products.',
-        keywords: 'quality certification, iso certified wire manufacturer, cable quality standards',
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          "name": "Quality Certifications",
-          "url": "https://www.wiretex.com/quality-certification"
-        }
-      },
-      {
-        slug: '/team',
-        meta_title: 'Leadership Team | Wiretex Manufacturing Experts',
-        meta_description: 'Meet the experienced leadership and technical team driving innovation, quality, and customer success at Wiretex.',
-        keywords: 'wiretex team, manufacturing experts, leadership team, engineering professionals',
-        schema: {
-          "@context": "https://schema.org",
-          "@type": "ProfilePage",
-          "name": "Wiretex Team",
-          "url": "https://www.wiretex.com/team"
+          "name": "Resources",
+          "url": "https://www.ostech.com/resources"
         }
       },
       {
         slug: '/terms-and-conditions',
-        meta_title: 'Terms & Conditions | Wiretex',
-        meta_description: 'Read the terms and conditions governing the use of Wiretex website, products, services, and customer interactions.',
-        keywords: 'terms and conditions, wiretex policies, website terms',
+        meta_title: 'Terms & Conditions | Ostech',
+        meta_description: 'Read the terms and conditions governing the use of Ostech website, products, automation services, and customer agreements.',
+        keywords: 'terms and conditions, ostech policies, website terms',
         schema: {
           "@context": "https://schema.org",
           "@type": "WebPage",
           "name": "Terms and Conditions",
-          "url": "https://www.wiretex.com/terms-and-conditions"
+          "url": "https://www.ostech.com/terms-and-conditions"
         }
       }
     ];
 
     const dataCol = db.collection(COLLECTION_NAME);
+    const activeSlugs = pages.map(p => p.slug);
+
+    // Delete non-existing pages metadata
+    const deleteResult = await dataCol.deleteMany({ slug: { $nin: activeSlugs } });
+    if (deleteResult.deletedCount > 0) {
+      console.log(`Removed ${deleteResult.deletedCount} non-existing pages metadata entries`);
+    }
+
     for (const page of pages) {
       const existingPage = await dataCol.findOne({ slug: page.slug });
       if (!existingPage) {

@@ -170,6 +170,52 @@ export default function SeoSettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!formData.siteName || !formData.siteName.trim()) {
+      toast({ title: 'Error', description: 'Site Name is required.', variant: 'destructive' });
+      return;
+    }
+
+    const urlRegex = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/i;
+    
+    if (formData.siteUrl && formData.siteUrl.trim()) {
+      if (!urlRegex.test(formData.siteUrl.trim())) {
+        toast({ title: 'Error', description: 'Invalid Site URL format.', variant: 'destructive' });
+        return;
+      }
+    }
+
+    if (formData.googleAnalyticsId && formData.googleAnalyticsId.trim()) {
+      const gaRegex = /^(G-[A-Z0-9]+|UA-\d+-\d+)$/i;
+      if (!gaRegex.test(formData.googleAnalyticsId.trim())) {
+        toast({ title: 'Error', description: 'Invalid Google Analytics Measurement ID format.', variant: 'destructive' });
+        return;
+      }
+    }
+
+    for (const link of formData.socialLinks) {
+      if (link.url && !urlRegex.test(link.url.trim())) {
+        toast({ title: 'Error', description: 'Invalid URL format.', variant: 'destructive' });
+        return;
+      }
+    }
+
+    if (formData.businessPhone && formData.businessPhone.trim()) {
+      const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+      const digits = formData.businessPhone.replace(/\D/g, '');
+      if (!phoneRegex.test(formData.businessPhone.trim()) || digits.length < 5) {
+        toast({ title: 'Error', description: 'Invalid phone number format.', variant: 'destructive' });
+        return;
+      }
+    }
+    
+    if (formData.businessEmail && formData.businessEmail.trim()) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.businessEmail.trim())) {
+        toast({ title: 'Error', description: 'Invalid email format.', variant: 'destructive' });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const res = await fetch('/api/seo/settings', {

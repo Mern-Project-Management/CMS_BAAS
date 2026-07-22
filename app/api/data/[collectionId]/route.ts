@@ -10,10 +10,8 @@ import {
   oid,
   resolveRelationCollectionName,
 } from '@/lib/db';
-import { requireAuth, getSession } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth';
 import type { ApiResponse, CollectionWithFields } from '@/lib/types';
-import { encryptValue, decryptValue } from '@/lib/encryption';
-import { validateRecord } from '@/lib/validation-engine';
 
 const slugify = (text: string) => {
   return text
@@ -87,29 +85,9 @@ export async function GET(
       return await populateRecord(record, fields || [], collection.name, db);
     }));
 
-    // Process encrypted fields
-    const session = await getSession();
-    const isAdmin = !!session;
-
-    const processedRecords = populatedRecords.map((record: any) => {
-      const copy = { ...record };
-      if (fields) {
-        for (const field of fields) {
-          if (field.is_encrypted && copy[field.name]) {
-            if (isAdmin) {
-              copy[field.name] = decryptValue(copy[field.name]);
-            } else {
-              copy[field.name] = '[ENCRYPTED]';
-            }
-          }
-        }
-      }
-      return copy;
-    });
-
     return NextResponse.json({
       success: true,
-      data: processedRecords,
+      data: populatedRecords,
     } as ApiResponse<any>, { status: 200 });
   } catch (error: any) {
     console.error('Data GET Error:', error);
@@ -186,55 +164,55 @@ export async function POST(
 
     const body = await request.json();
     const db = await getDb();
+    const { data: fields } = await getCollectionFields(collection.id);
 
-    // Enforce unique constraints on fields
-    const { data: collectionFields } = await getCollectionFields(collection.id);
-    if (collectionFields) {
-      for (const field of collectionFields) {
-        if (field.is_unique && body[field.name] !== undefined && body[field.name] !== null && body[field.name] !== '') {
-          if (field.is_encrypted) {
-            const allRecords = await db.collection(collection.name).find({ [field.name]: { $exists: true } }).toArray();
-            const exists = allRecords.some((r: any) => decryptValue(r[field.name]) === String(body[field.name]));
-            if (exists) {
-              return NextResponse.json(
-                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
-                { status: 400 }
-              );
-            }
-          } else {
-            const query = { [field.name]: body[field.name] };
-            const existing = await db.collection(collection.name).findOne(query);
-            if (existing) {
-              return NextResponse.json(
-                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
-                { status: 400 }
-              );
-            }
+    if (Array.isArray(body)) {
+      const docs = [];
+      for (const item of body) {
+        let itemData = { ...item };
+        if (itemData.slug && typeof itemData.slug === 'string') {
+          itemData.slug = slugify(itemData.slug);
+        }
+
+        if (itemData.slug && typeof itemData.slug === 'string') {
+          const baseSlug = itemData.slug;
+          let uniqueSlug = baseSlug;
+          let counter = 1;
+          
+          while (await db.collection(collection.name).findOne({ slug: uniqueSlug })) {
+            uniqueSlug = `${baseSlug}-${counter}`;
+            counter++;
           }
+          itemData.slug = uniqueSlug;
         }
+
+        const now = new Date().toISOString();
+        docs.push({
+          ...itemData,
+          created_at: now,
+          updated_at: now,
+        });
       }
+
+      if (docs.length === 0) {
+        return NextResponse.json({ success: true, data: [] }, { status: 201 });
+      }
+
+      const result = await db.collection(collection.name).insertMany(docs);
+      const insertedDocs = [];
+      for (let i = 0; i < docs.length; i++) {
+        const normalizedRecord = normalizeDocId({ ...docs[i], _id: result.insertedIds[i] });
+        const fullPopulated = await populateRecord(normalizedRecord, fields || [], collection.name, db);
+        insertedDocs.push(fullPopulated);
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: insertedDocs,
+      } as ApiResponse<any>, { status: 201 });
     }
 
-    // Validate record payload before saving
-    if (collectionFields) {
-      const validation = validateRecord(body, collectionFields);
-      if (!validation.valid) {
-        return NextResponse.json(
-          { success: false, error: validation.errors.map((e) => e.message).join(', ') },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Encrypt sensitive fields
-    if (collectionFields) {
-      for (const field of collectionFields) {
-        if (field.is_encrypted && body[field.name] !== undefined && body[field.name] !== null && body[field.name] !== '') {
-          body[field.name] = encryptValue(body[field.name]);
-        }
-      }
-    }
-
+    // Single document insertion logic (original)
     if (body.slug && typeof body.slug === 'string') {
       body.slug = slugify(body.slug);
     }
@@ -261,8 +239,7 @@ export async function POST(
     const result = await db.collection(collection.name).insertOne(doc);
     const normalizedRecord: any = normalizeDocId({ ...doc, _id: result.insertedId });
 
-    const { data: recordFields } = await getCollectionFields(collection.id);
-    const fullPopulated = await populateRecord(normalizedRecord, recordFields || [], collection.name, db);
+    const fullPopulated = await populateRecord(normalizedRecord, fields || [], collection.name, db);
 
     return NextResponse.json({
       success: true,
@@ -312,40 +289,6 @@ export async function PATCH(
     const body = await request.json();
     const _db = await getDb();
 
-    // Enforce unique constraints on fields
-    const { data: collectionFields } = await getCollectionFields(collection.id);
-    if (collectionFields) {
-      for (const field of collectionFields) {
-        if (field.is_unique && body[field.name] !== undefined && body[field.name] !== null && body[field.name] !== '') {
-          if (field.is_encrypted) {
-            const allRecords = await _db.collection(collection.name).find({ 
-              [field.name]: { $exists: true },
-              _id: { $ne: oid(id)! } 
-            }).toArray();
-            const exists = allRecords.some((r: any) => decryptValue(r[field.name]) === String(body[field.name]));
-            if (exists) {
-              return NextResponse.json(
-                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
-                { status: 400 }
-              );
-            }
-          } else {
-            const query = { 
-              [field.name]: body[field.name],
-              _id: { $ne: oid(id)! }
-            };
-            const existing = await _db.collection(collection.name).findOne(query);
-            if (existing) {
-              return NextResponse.json(
-                { success: false, error: `${field.display_name} value must be unique. The value "${body[field.name]}" already exists.` },
-                { status: 400 }
-              );
-            }
-          }
-        }
-      }
-    }
-
     if (body.slug && typeof body.slug === 'string') {
       body.slug = slugify(body.slug);
     }
@@ -379,8 +322,8 @@ export async function PATCH(
 
     const normalizedRecord = normalizeDocId(result);
 
-    const { data: recordFields } = await getCollectionFields(collection.id);
-    const fullPopulated = await populateRecord(normalizedRecord, recordFields || [], collection.name, _db);
+    const { data: fields } = await getCollectionFields(collection.id);
+    const fullPopulated = await populateRecord(normalizedRecord, fields || [], collection.name, _db);
 
     return NextResponse.json({
       success: true,

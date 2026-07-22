@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteRecord, updateRecord, getCollection, getCollectionByName, getDb, oid, getCollectionFields } from '@/lib/db';
+import { deleteRecord, updateRecord, getCollection, getCollectionByName, getDb } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import type { ApiResponse } from '@/lib/types';
-import { encryptValue } from '@/lib/encryption';
 import { ObjectId } from 'mongodb';
-import fs from 'fs';
+import { unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
+
+// Helper to delete an uploaded file by its URL path
+async function deleteUploadedFile(fileUrl: string) {
+  if (typeof fileUrl !== 'string' || !fileUrl.startsWith('/uploads/')) return;
+  try {
+    const filepath = path.join(process.cwd(), 'public', fileUrl);
+    if (existsSync(filepath)) {
+      await unlink(filepath);
+      console.log(`Deleted unused upload file: ${filepath}`);
+    }
+  } catch (e) {
+    console.error(`Failed to delete upload file: ${fileUrl}`, e);
+  }
+}
+
+// Helper to extract upload URLs from a field value (handles strings and arrays of strings)
+function extractUrls(val: any): string[] {
+  if (typeof val === 'string' && val.startsWith('/uploads/')) {
+    return [val];
+  }
+  if (Array.isArray(val)) {
+    return val.filter(item => typeof item === 'string' && item.startsWith('/uploads/'));
+  }
+  return [];
+}
 
 async function resolveCollectionName(collectionId: string): Promise<{ collectionName: string; error?: string }> {
   let collectionName = collectionId;
@@ -22,40 +47,6 @@ async function resolveCollectionName(collectionId: string): Promise<{ collection
     }
   }
   return { collectionName };
-}
-
-function cleanLocalFile(filePathUrl: string) {
-  if (typeof filePathUrl === 'string' && filePathUrl.startsWith('/uploads/')) {
-    try {
-      const fullPath = path.join(process.cwd(), 'public', filePathUrl);
-      if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-      }
-    } catch (err) {
-      console.error(`Failed to unlink file at ${filePathUrl}:`, err);
-    }
-  }
-}
-
-function findFilesInObject(obj: any): string[] {
-  const fileUrls: string[] = [];
-  if (!obj) return fileUrls;
-  if (typeof obj === 'string') {
-    if (obj.startsWith('/uploads/')) {
-      fileUrls.push(obj);
-    }
-  } else if (Array.isArray(obj)) {
-    for (const item of obj) {
-      fileUrls.push(...findFilesInObject(item));
-    }
-  } else if (typeof obj === 'object') {
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        fileUrls.push(...findFilesInObject(obj[key]));
-      }
-    }
-  }
-  return fileUrls;
 }
 
 export async function PATCH(
@@ -75,49 +66,36 @@ export async function PATCH(
       );
     }
 
-    // Enforce unique constraints on fields during edit
-    let collectionDoc: any = null;
-    if (ObjectId.isValid(collectionId)) {
-      const { data } = await getCollection(collectionId);
-      collectionDoc = data;
-    } else {
-      const { data } = await getCollectionByName(collectionId);
-      collectionDoc = data;
+    // 1. Fetch the existing record to find removed/replaced files
+    const db = await getDb();
+    let recordObjectId;
+    try {
+      recordObjectId = new ObjectId(recordId);
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid record ID format' }, { status: 400 });
     }
+    const existingRecord = await db.collection(collectionName).findOne({ _id: recordObjectId });
 
-    if (collectionDoc) {
-      const { data: collectionFields } = await getCollectionFields(collectionDoc.id);
-      if (collectionFields) {
-        const db = await getDb();
-        for (const field of collectionFields) {
-          if (field.is_unique && payload[field.name] !== undefined && payload[field.name] !== null && payload[field.name] !== '') {
-            const query = { 
-              [field.name]: payload[field.name],
-              _id: { $ne: oid(recordId)! }
-            };
-            const existing = await db.collection(collectionName).findOne(query);
-            if (existing) {
-              return NextResponse.json(
-                { success: false, error: `${field.display_name} value must be unique. The value "${payload[field.name]}" already exists.` },
-                { status: 400 }
-              );
-            }
-          }
-        }
+    // 2. Identify files that are no longer referenced in the payload
+    if (existingRecord) {
+      const existingUrls: string[] = [];
+      const newUrls: string[] = [];
 
-        // Encrypt sensitive fields
-        for (const field of collectionFields) {
-          if (field.is_encrypted && payload[field.name] !== undefined && payload[field.name] !== null && payload[field.name] !== '') {
-            payload[field.name] = encryptValue(payload[field.name]);
-          }
-        }
+      for (const key in existingRecord) {
+        existingUrls.push(...extractUrls(existingRecord[key]));
+      }
+      for (const key in payload) {
+        newUrls.push(...extractUrls(payload[key]));
+      }
+
+      // Find URLs present in existing record but missing in the update payload
+      const urlsToDelete = existingUrls.filter(url => !newUrls.includes(url));
+      for (const url of urlsToDelete) {
+        await deleteUploadedFile(url);
       }
     }
 
-    // Retrieve the old document before editing it
-    const db = await getDb();
-    const oldDoc = await db.collection(collectionName).findOne({ _id: oid(recordId) });
-
+    // 3. Update the record
     const { data, error: updateError } = await updateRecord(collectionName, recordId, payload);
     if (updateError) {
       return NextResponse.json(
@@ -125,18 +103,6 @@ export async function PATCH(
         { status: 500 }
       );
     }
-
-    // Clean up replaced or removed files
-    if (oldDoc) {
-      const oldFiles = findFilesInObject(oldDoc);
-      const newFiles = findFilesInObject(payload);
-      for (const oldFile of oldFiles) {
-        if (!newFiles.includes(oldFile)) {
-          cleanLocalFile(oldFile);
-        }
-      }
-    }
-
     return NextResponse.json(
       { success: true, data, message: 'Record updated successfully' } as ApiResponse<typeof data>,
       { status: 200 }
@@ -166,10 +132,27 @@ export async function DELETE(
       );
     }
 
-    // Retrieve the document before deleting it
+    // 1. Fetch the existing record to find and delete all associated files
     const db = await getDb();
-    const oldDoc = await db.collection(collectionName).findOne({ _id: oid(recordId) });
+    let recordObjectId;
+    try {
+      recordObjectId = new ObjectId(recordId);
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid record ID format' }, { status: 400 });
+    }
+    const existingRecord = await db.collection(collectionName).findOne({ _id: recordObjectId });
 
+    if (existingRecord) {
+      const existingUrls: string[] = [];
+      for (const key in existingRecord) {
+        existingUrls.push(...extractUrls(existingRecord[key]));
+      }
+      for (const url of existingUrls) {
+        await deleteUploadedFile(url);
+      }
+    }
+
+    // 2. Perform deletion
     const { error: deleteError } = await deleteRecord(collectionName, recordId);
     if (deleteError) {
       return NextResponse.json(
@@ -177,15 +160,6 @@ export async function DELETE(
         { status: 500 }
       );
     }
-
-    // Clean up all local public files in the deleted record
-    if (oldDoc) {
-      const oldFiles = findFilesInObject(oldDoc);
-      for (const oldFile of oldFiles) {
-        cleanLocalFile(oldFile);
-      }
-    }
-
     return NextResponse.json(
       { success: true, message: 'Record deleted successfully' } as ApiResponse<null>,
       { status: 200 }
@@ -198,4 +172,3 @@ export async function DELETE(
     );
   }
 }
-

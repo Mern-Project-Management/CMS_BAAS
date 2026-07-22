@@ -22,16 +22,11 @@ export function validateFieldValue(
 
   let isEmpty = value === null || value === undefined || value === '';
 
-  if (!isEmpty && typeof value === 'string') {
-    if (field.field_type === 'Editor') {
-      const stripped = value.replace(/<[^>]*>/g, '').trim();
-      if (stripped === '') {
-        isEmpty = true;
-      }
-    } else {
-      if (value.trim() === '') {
-        isEmpty = true;
-      }
+  // If it's an editor field, strip HTML tags to check if it's actually empty
+  if (!isEmpty && field.field_type === 'Editor' && typeof value === 'string') {
+    const stripped = value.replace(/<[^>]*>/g, '').trim();
+    if (stripped === '') {
+      isEmpty = true;
     }
   } else if (!isEmpty && typeof value === 'string' && value.trim() === '') {
     // Treat any string that is just whitespace as empty
