@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "OSTECH_ADMIN",
+      name: "Manufacturing_Admin",
       script: "npm",
       args: "run start",
       instances: 1,
@@ -11,7 +11,7 @@ module.exports = {
       max_memory_restart: "1G",
       env: {
         NODE_ENV: "production",
-        PORT: 3032,
+        PORT: 3012,
       },
     },
   ],

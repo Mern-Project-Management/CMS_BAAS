@@ -38,10 +38,11 @@ import { FilePreview } from './file-preview';
 import { MultiImageUpload } from './multi-image-upload';
 import { FileUpload } from './file-upload';
 import { HierarchicalSelector } from './hierarchical-selector';
+import { RecordForm } from './record-form';
 import { PageRouteSelector } from './page-route-selector';
 import { TipTapEditor } from './tiptap-editor';
 import { ColorField, ColorSwatch } from './color-field';
-import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, AlertTriangle } from 'lucide-react';
+import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, AlertTriangle, HelpCircle, Plus } from 'lucide-react';
 import type { Field } from '@/lib/types';
 import { validateRecord } from '@/lib/validation-engine';
 
@@ -98,6 +99,83 @@ export function RecordsTable({
   statusRenderer,
 }: Props) {
   const { toast } = useToast();
+
+  const isProductsCollection = collectionId === '6a1e830b76dbcc921bb5af83' || title?.toLowerCase().includes('product');
+  const isBlogCollection = collectionId === '6a2cd944c7ccfc7bea1e009a' || collectionId === '6a11400a3facc053a2a24c42' || title?.toLowerCase().includes('blog');
+  const isManageMetaCollection = collectionId === '6a2cd928c7ccfc7bea1e0099' || title?.toLowerCase().includes('meta');
+  const hasFaqOption = isProductsCollection || isBlogCollection || isManageMetaCollection;
+
+  // FAQ Management Dialog States
+  const [faqDialogOpen, setFaqDialogOpen] = useState(false);
+  const [selectedFaqSlug, setSelectedFaqSlug] = useState<string | null>(null);
+  const [faqList, setFaqList] = useState<any[]>([]);
+  const [loadingFaqs, setLoadingFaqs] = useState(false);
+  const [faqFields, setFaqFields] = useState<any[]>([]);
+  const [addingFaq, setAddingFaq] = useState(false);
+
+  const fetchFaqsForPage = async (pageName: string) => {
+    setLoadingFaqs(true);
+    try {
+      const res = await fetch(`/api/data/6a6070b9e00772e02b6b8b1a?page=${encodeURIComponent(pageName)}`);
+      const json = await res.json();
+      if (json.success) {
+        setFaqList(json.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch FAQs', err);
+    } finally {
+      setLoadingFaqs(false);
+    }
+  };
+
+  const handleOpenFaqs = async (pageSlug: string) => {
+    setSelectedFaqSlug(pageSlug);
+    setFaqDialogOpen(true);
+    setAddingFaq(false);
+    fetchFaqsForPage(pageSlug);
+    
+    if (faqFields.length === 0) {
+      try {
+        const res = await fetch('/api/fields?collection_id=6a6070b9e00772e02b6b8b1a');
+        const json = await res.json();
+        if (json.success) {
+          setFaqFields(json.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch FAQ fields', err);
+      }
+    }
+  };
+
+  const handleDeleteFaq = async (faqId: string) => {
+    if (!confirm('Are you sure you want to delete this FAQ?')) return;
+    try {
+      const res = await fetch(`/api/data/6a6070b9e00772e02b6b8b1a/${faqId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: 'FAQ deleted successfully' });
+        if (selectedFaqSlug) {
+          fetchFaqsForPage(selectedFaqSlug);
+        }
+      } else {
+        throw new Error(json.error || 'Failed to delete FAQ');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const getFaqPageValue = (record: any) => {
+    const slug = record.slug || record.page || '';
+    if (isBlogCollection) {
+      return `blogs/${slug}`;
+    }
+    if (isManageMetaCollection) {
+      return slug;
+    }
+    const catSlug = record.category_populated?.category_slug || record.category_populated?.slug || '';
+    return catSlug ? `${catSlug}/${slug}` : slug;
+  };
 
   // All fields — we intentionally IGNORE hiddenFieldNames so all data is shown
   const allFields = fields;
@@ -654,12 +732,22 @@ const extraKeys = records.length > 0
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
-                          title="View record"
+                          className="h-7 w-7"
                           onClick={() => setViewRecord(r)}
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
+                        {hasFaqOption && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                            title="Manage FAQs"
+                            onClick={() => handleOpenFaqs(getFaqPageValue(r))}
+                          >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -895,6 +983,97 @@ const extraKeys = records.length > 0
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══════════════════════════════════════
+          FAQ MANAGEMENT DIALOG
+      ══════════════════════════════════════ */}
+      <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center justify-between border-b pb-4">
+            <div>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-primary" />
+                <span>Manage FAQs</span>
+                {selectedFaqSlug && (
+                  <Badge variant="secondary" className="font-mono text-xs bg-primary/10 text-primary">
+                    /{selectedFaqSlug}
+                  </Badge>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                Add, view, and remove Frequently Asked Questions for this product page.
+              </DialogDescription>
+            </div>
+            {!addingFaq && (
+              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1">
+                <Plus className="w-4 h-4" />
+                Add FAQs
+              </Button>
+            )}
+          </DialogHeader>
+
+          {addingFaq ? (
+            <div className="py-4 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Creating FAQs</h3>
+                <Button variant="ghost" size="sm" onClick={() => setAddingFaq(false)}>
+                  Back to List
+                </Button>
+              </div>
+              <RecordForm
+                collectionId="6a6070b9e00772e02b6b8b1a"
+                fields={faqFields}
+                defaultValues={{ page: selectedFaqSlug }}
+                onCreated={() => {
+                  setAddingFaq(false);
+                  if (selectedFaqSlug) {
+                    fetchFaqsForPage(selectedFaqSlug);
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="py-4 space-y-4">
+              {loadingFaqs ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <span className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                  <p className="text-sm font-medium text-muted-foreground">Loading FAQs...</p>
+                </div>
+              ) : faqList.length === 0 ? (
+                <div className="text-center py-16 border-2 border-dashed rounded-xl border-muted/50">
+                  <HelpCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-muted-foreground">No FAQs defined for this product page yet.</p>
+                  <p className="text-xs text-muted-foreground/75 mt-1">Click "Add FAQs" to create the first one.</p>
+                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1">
+                    <Plus className="w-4 h-4" />
+                    Create First FAQ
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {faqList.map((faq) => (
+                    <div key={faq.id} className="p-4 rounded-xl border bg-card shadow-sm flex items-start justify-between gap-4">
+                      <div className="space-y-1.5 flex-1">
+                        <h4 className="font-bold text-sm text-foreground">{faq.question}</h4>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">{faq.ans}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteFaq(faq.id)}
+                        className="text-destructive hover:bg-destructive/10 h-8 w-8 shrink-0"
+                        title="Delete FAQ"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

@@ -26,7 +26,7 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
   <style>
     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0; color: #3f3f46; }
     .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e4e4e7; }
-    .header { background-color: #18181b; padding: 30px; text-align: center; border-bottom: 3px solid #D4AF37; }
+    .header { background-color: #0c1e21; padding: 30px; text-align: center; border-bottom: 4px solid #187272; }
     .header h1 { margin: 0; color: #ffffff; font-size: 20px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
     .content { padding: 40px 30px; }
     .intro { margin-top: 0; font-size: 16px; color: #52525b; line-height: 1.5; }
@@ -34,7 +34,7 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
     .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e4e4e7; font-size: 14px; }
     .data-table th { width: 35%; color: #71717a; font-weight: 500; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
     .data-table td { color: #18181b; font-weight: 500; }
-    .message-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 20px; margin-top: 25px; font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap; }
+    .message-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #187272; border-radius: 6px; padding: 20px; margin-top: 25px; font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap; }
     .footer { text-align: center; padding: 20px; font-size: 12px; color: #a1a1aa; background-color: #fafafa; border-top: 1px solid #f4f4f5; }
   </style>
 </head>
@@ -53,15 +53,15 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
         </tr>
         <tr>
           <th>Email Address</th>
-          <td><a href="mailto:{{email}}" style="color: #0284c7; text-decoration: none;">{{email}}</a></td>
+          <td><a href="mailto:{{email}}" style="color: #187272; text-decoration: none;">{{email}}</a></td>
         </tr>
         <tr>
-          <th>Service of Interest</th>
+          <th>Service / Product</th>
           <td>{{service_id}}</td>
         </tr>
         <tr>
           <th>Source URL</th>
-          <td><a href="{{url}}" style="color: #0284c7; text-decoration: none;">{{url}}</a></td>
+          <td><a href="{{url}}" style="color: #187272; text-decoration: none;">{{url}}</a></td>
         </tr>
       </table>
 
@@ -77,7 +77,7 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
   },
   {
     name: "Client Inquiry Auto-Reply",
-    subject: "Thank You for Your Inquiry - Brand Untold",
+    subject: "Thank You for Your Inquiry - CROWN Packaging",
     variables: ["name", "email", "service_id"],
     is_default: true,
     html_content: `<!DOCTYPE html>
@@ -87,16 +87,16 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
   <style>
     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #fafafa; margin: 0; padding: 40px 0; color: #27272a; }
     .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #f4f4f5; }
-    .hero { background: #18181b; padding: 40px 30px; text-align: center; border-bottom: 4px solid #D4AF37; }
-    .hero h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 400; letter-spacing: 1px; }
+    .hero { background: #0c1e21; padding: 40px 30px; text-align: center; border-bottom: 4px solid #187272; }
+    .hero h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 500; letter-spacing: 1px; }
     .content { padding: 40px; line-height: 1.6; font-size: 15px; color: #3f3f46; }
     .content p { margin: 0 0 20px 0; }
-    .details-box { background: #f4f4f5; border-radius: 6px; padding: 25px; margin: 30px 0; border-left: 3px solid #D4AF37; }
+    .details-box { background: #f4f4f5; border-radius: 6px; padding: 25px; margin: 30px 0; border-left: 4px solid #187272; }
     .details-box p { margin: 0 0 10px 0; font-size: 14px; }
     .details-box p:last-child { margin: 0; }
     .details-label { font-weight: 600; color: #18181b; display: inline-block; width: 120px; }
     .cta-container { text-align: center; margin: 40px 0 20px 0; }
-    .btn { display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 4px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
+    .btn { display: inline-block; background-color: #187272; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 4px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
     .footer { text-align: center; padding: 30px; font-size: 12px; color: #a1a1aa; border-top: 1px solid #f4f4f5; background: #fafafa; }
   </style>
 </head>
@@ -117,10 +117,10 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
 
       <p>If you have any additional information to share or immediate questions, please feel free to reply directly to this email. We value your interest and look forward to assisting you.</p>
       
-      <p style="margin-top: 30px; margin-bottom: 0;">Best Regards,<br><strong style="color: #18181b;">The Brand Untold Team</strong></p>
+      <p style="margin-top: 30px; margin-bottom: 0;">Best Regards,<br><strong style="color: #18181b;">The CROWN Packaging Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} Brand Untold. All rights reserved.<br>
+      &copy; ${new Date().getFullYear()} CROWN Packaging. All rights reserved.<br>
       This is an automated confirmation email.
     </div>
   </div>

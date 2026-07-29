@@ -129,6 +129,11 @@ export default function UserManagementPage() {
       toast({ title: 'Validation Error', description: 'Email is required', variant: 'destructive' });
       return;
     }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast({ title: 'Validation Error', description: 'Invalid email format.', variant: 'destructive' });
+      return;
+    }
     if (!formData.password || formData.password.length < 6) {
       toast({ title: 'Validation Error', description: 'Password must be at least 6 characters', variant: 'destructive' });
       return;
@@ -169,6 +174,11 @@ export default function UserManagementPage() {
 
   const handleUpdate = async () => {
     if (!editingUser) return;
+
+    if (formData.email.trim() && !emailRegex.test(formData.email.trim())) {
+      toast({ title: 'Validation Error', description: 'Invalid email format.', variant: 'destructive' });
+      return;
+    }
 
     setSaving(true);
     try {

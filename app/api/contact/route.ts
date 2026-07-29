@@ -73,12 +73,33 @@ const result = await getRecords('contact_leads', safeLimit, {}, undefined);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, message, url } = body;
+    const { name, email, phone, message, url } = body;
     const service_id = body.service_id || body.service;
 
-    // Validation logic removed as requested
+    const nameRegex = /^[a-zA-Z\s]{2,50}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const xssRegex = /<[^>]*>?/gm;
 
-    const { error: dbError } = await createRecord('contact_leads', { name, email, service_id, message, url });
+    if (!name || !nameRegex.test(name.trim())) {
+      return NextResponse.json({ success: false, error: 'Invalid name format' }, { status: 400 });
+    }
+    if (!email || !emailRegex.test(email.trim())) {
+      return NextResponse.json({ success: false, error: 'Invalid email format' }, { status: 400 });
+    }
+    if (phone) {
+      const phoneTrimmed = phone.trim();
+      const validDigits = /^[2-9]\d{9}$/.test(phoneTrimmed);
+      const isRepetitive = /^(\d)\1{9}$/.test(phoneTrimmed);
+      const isSequential = /^(0123456789|1234567890|9876543210|0987654321)$/.test(phoneTrimmed);
+      if (!validDigits || isRepetitive || isSequential) {
+        return NextResponse.json({ success: false, error: 'Invalid phone number' }, { status: 400 });
+      }
+    }
+    if (!message || !/[a-zA-Z0-9]/.test(message.trim()) || xssRegex.test(message)) {
+      return NextResponse.json({ success: false, error: 'Invalid message text' }, { status: 400 });
+    }
+
+    const { error: dbError } = await createRecord('contact_leads', { name, email, phone, service_id, message, url });
     if (dbError) console.error('Failed to save contact form data:', dbError);
 
     await sendContactEmail({ name, email, service_id, message });
