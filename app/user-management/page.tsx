@@ -114,6 +114,8 @@ export default function UserManagementPage() {
     setDialogMode('edit');
   };
 
+  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
   const closeDialog = () => {
     setDialogMode(null);
     setEditingUser(null);
@@ -129,8 +131,7 @@ export default function UserManagementPage() {
       toast({ title: 'Validation Error', description: 'Email is required', variant: 'destructive' });
       return;
     }
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(formData.email.trim())) {
+    if (!EMAIL_REGEX.test(formData.email.trim())) {
       toast({ title: 'Validation Error', description: 'Invalid email format.', variant: 'destructive' });
       return;
     }
@@ -175,7 +176,7 @@ export default function UserManagementPage() {
   const handleUpdate = async () => {
     if (!editingUser) return;
 
-    if (formData.email.trim() && !emailRegex.test(formData.email.trim())) {
+    if (formData.email.trim() && !EMAIL_REGEX.test(formData.email.trim())) {
       toast({ title: 'Validation Error', description: 'Invalid email format.', variant: 'destructive' });
       return;
     }

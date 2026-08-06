@@ -12,6 +12,7 @@ import {
 } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import type { ApiResponse, CollectionWithFields } from '@/lib/types';
+import { validateRecord } from '@/lib/validation-engine';
 
 const slugify = (text: string) => {
   return text
@@ -166,10 +167,39 @@ export async function POST(
     const db = await getDb();
     const { data: fields } = await getCollectionFields(collection.id);
 
+    const validateAndPrepare = async (itemData: any) => {
+      // Trim strings
+      for (const key in itemData) {
+        if (typeof itemData[key] === 'string') {
+          itemData[key] = itemData[key].trim();
+        }
+      }
+
+      // Run validation rules
+      if (fields) {
+        const validation = validateRecord(itemData, fields);
+        if (!validation.valid) {
+          throw new Error(validation.errors[0].message);
+        }
+
+        // Uniqueness check
+        for (const field of fields) {
+          if (field.is_unique && itemData[field.name] !== undefined && itemData[field.name] !== null && itemData[field.name] !== '') {
+            const duplicate = await db.collection(collection.name).findOne({ [field.name]: itemData[field.name] });
+            if (duplicate) {
+              throw new Error(`${field.display_name} already exists.`);
+            }
+          }
+        }
+      }
+    };
+
     if (Array.isArray(body)) {
       const docs = [];
       for (const item of body) {
         let itemData = { ...item };
+        await validateAndPrepare(itemData);
+
         if (itemData.slug && typeof itemData.slug === 'string') {
           itemData.slug = slugify(itemData.slug);
         }
@@ -212,7 +242,9 @@ export async function POST(
       } as ApiResponse<any>, { status: 201 });
     }
 
-    // Single document insertion logic (original)
+    // Single document insertion logic
+    await validateAndPrepare(body);
+
     if (body.slug && typeof body.slug === 'string') {
       body.slug = slugify(body.slug);
     }
@@ -289,6 +321,40 @@ export async function PATCH(
     const body = await request.json();
     const _db = await getDb();
 
+    // Trim strings
+    for (const key in body) {
+      if (typeof body[key] === 'string') {
+        body[key] = body[key].trim();
+      }
+    }
+
+    const { data: fields } = await getCollectionFields(collection.id);
+    if (fields) {
+      const existingRecord = await _db.collection(collection.name).findOne({ _id: oid(id)! });
+      if (!existingRecord) {
+        return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 });
+      }
+      const fullRecord = { ...normalizeDocId(existingRecord), ...body };
+      
+      const validation = validateRecord(fullRecord, fields);
+      if (!validation.valid) {
+        return NextResponse.json({ success: false, error: validation.errors[0].message }, { status: 400 });
+      }
+
+      // Check uniqueness
+      for (const field of fields) {
+        if (field.is_unique && fullRecord[field.name] !== undefined && fullRecord[field.name] !== null && fullRecord[field.name] !== '') {
+          const duplicate = await _db.collection(collection.name).findOne({
+            [field.name]: fullRecord[field.name],
+            _id: { $ne: oid(id)! }
+          });
+          if (duplicate) {
+            return NextResponse.json({ success: false, error: `${field.display_name} already exists.` }, { status: 409 });
+          }
+        }
+      }
+    }
+
     if (body.slug && typeof body.slug === 'string') {
       body.slug = slugify(body.slug);
     }
@@ -322,7 +388,6 @@ export async function PATCH(
 
     const normalizedRecord = normalizeDocId(result);
 
-    const { data: fields } = await getCollectionFields(collection.id);
     const fullPopulated = await populateRecord(normalizedRecord, fields || [], collection.name, _db);
 
     return NextResponse.json({
