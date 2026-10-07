@@ -1173,7 +1173,7 @@ function formatExtraValue(value: any, key: string) {
   }
 
   return (
-    <span className="inline-block max-w-full truncate align-bottom" title={String(value)}>
+    <span title={String(value)}>
       {String(value)}
     </span>
   );
@@ -1358,24 +1358,25 @@ function formatValue(record: RecordRow, field: Field) {
       return value ? new Date(value).toLocaleDateString() : '—';
     case 'File':
     case 'Image': {
-      if (typeof value === 'string' && (value.startsWith('/uploads/') || value.startsWith('http'))) {
-        const isPdf = value.match(/\.pdf$/i);
+      const actualValue = Array.isArray(value) ? value[0] : value;
+      if (typeof actualValue === 'string' && (actualValue.startsWith('/uploads/') || actualValue.startsWith('http'))) {
+        const isPdf = actualValue.match(/\.pdf$/i);
         if (isPdf) {
           return (
             <a
-              href={value}
+              href={actualValue}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
             >
               <FileText className="w-4 h-4 shrink-0" />
-              <span className="truncate max-w-[120px]">View CV</span>
+              <span className="truncate max-w-[120px]">View Document</span>
             </a>
           );
         }
-        return <FilePreview url={value} fieldType={field.field_type} />;
+        return <FilePreview url={actualValue} fieldType={field.field_type} />;
       }
-      return String(value);
+      return String(actualValue);
     }
     case 'Editor': {
       const plain = stripHtml(String(value));
@@ -1386,11 +1387,13 @@ function formatValue(record: RecordRow, field: Field) {
         </span>
       );
     }
-    default:
+    default: {
+      const text = String(value);
       return (
-        <span className="inline-block max-w-full truncate align-bottom" title={String(value)}>
-          {String(value)}
+        <span title={text} className="inline-block max-w-[180px] truncate align-bottom">
+          {text}
         </span>
       );
+    }
   }
 }
