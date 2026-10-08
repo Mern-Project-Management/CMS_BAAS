@@ -45,7 +45,7 @@ export async function GET(
     const filters: Record<string, any> = {};
     
     searchParams.forEach((value, key) => {
-      if (key !== 'limit' && key !== 'offset' && key !== 'fields') {
+      if (key !== 'limit' && key !== 'offset' && key !== 'fields' && key !== '_t') {
         filters[key] = value;
       }
     });
@@ -149,7 +149,10 @@ export async function POST(
   { params }: { params: Promise<{ collectionId: string }> }
 ) {
   try {
-    await requireAuth();
+    const session = await requireAuth();
+    if (session.role === 'viewer') {
+      return NextResponse.json({ success: false, error: 'Forbidden: Viewers cannot add data' }, { status: 403 });
+    }
     const { collectionId } = await params;
 
     let collection: CollectionWithFields | null = (await getCollection(collectionId)).data;
@@ -300,7 +303,10 @@ export async function PATCH(
   { params }: { params: Promise<{ collectionId: string; id: string }> }
 ) {
   try {
-    await requireAuth();
+    const session = await requireAuth();
+    if (session.role === 'viewer') {
+      return NextResponse.json({ success: false, error: 'Forbidden: Viewers cannot edit data' }, { status: 403 });
+    }
     const { collectionId, id } = await params;
 
     if (!oid(id)) {
@@ -417,7 +423,10 @@ export async function DELETE(
   { params }: { params: Promise<{ collectionId: string; id: string }> }
 ) {
   try {
-    await requireAuth();
+    const session = await requireAuth();
+    if (session.role === 'viewer') {
+      return NextResponse.json({ success: false, error: 'Forbidden: Viewers cannot delete data' }, { status: 403 });
+    }
     const { collectionId, id } = await params;
 
     if (!oid(id)) {

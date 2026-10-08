@@ -69,7 +69,7 @@ export function useAuth() {
     isSuperadmin: user?.role === 'superadmin', 
     isAdmin: user?.role === 'admin',
     hasPermission: (permission: string) => {
-      if (user?.role === 'superadmin') return true;
+      if (user?.role === 'superadmin' || user?.role === 'viewer') return true;
       return user?.permissions?.includes(permission) || false;
     }
   };

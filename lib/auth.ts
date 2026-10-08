@@ -28,8 +28,8 @@ export async function getSession(): Promise<SessionUser | null> {
     } catch (err) {
       console.error('Failed to fetch role permissions:', err);
     }
-  } else if (user.role === 'superadmin') {
-    // Superadmin has all permissions
+  } else if (user.role === 'superadmin' || user.role === 'viewer') {
+    // Superadmin and viewer have all permissions
     const { SIDEBAR_PERMISSIONS } = await import('./types');
     permissions = [...SIDEBAR_PERMISSIONS];
   }

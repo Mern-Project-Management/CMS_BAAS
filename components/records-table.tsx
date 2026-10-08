@@ -45,6 +45,7 @@ import { ColorField, ColorSwatch } from './color-field';
 import { Eye, Pencil, Trash2, Columns3, X, Save, FileText, AlertTriangle, HelpCircle, Plus } from 'lucide-react';
 import type { Field } from '@/lib/types';
 import { validateRecord } from '@/lib/validation-engine';
+import { useAuth } from '@/lib/auth-client';
 
 const slugify = (str: string) =>
   str
@@ -99,6 +100,8 @@ export function RecordsTable({
   statusRenderer,
 }: Props) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isViewer = user?.role === 'viewer';
 
   const isProductsCollection = collectionId === '6a1e830b76dbcc921bb5af83' || title?.toLowerCase().includes('product');
   const isBlogCollection = collectionId === '6a2cd944c7ccfc7bea1e009a' || collectionId === '6a11400a3facc053a2a24c42' || title?.toLowerCase().includes('blog');
@@ -754,6 +757,7 @@ const extraKeys = records.length > 0
                           className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
                           title="Edit record"
                           onClick={() => openEdit(r)}
+                          disabled={isViewer}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -763,7 +767,7 @@ const extraKeys = records.length > 0
                           className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
                           title="Delete record"
                           onClick={() => setDeleteConfirmId(r.id)}
-                          disabled={deletingId === r.id}
+                          disabled={isViewer || deletingId === r.id}
                         >
                           {deletingId === r.id ? (
                             <span className="w-3.5 h-3.5 rounded-full border-2 border-destructive/30 border-t-destructive animate-spin" />
@@ -1007,7 +1011,7 @@ const extraKeys = records.length > 0
               </DialogDescription>
             </div>
             {!addingFaq && (
-              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1">
+              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1" disabled={isViewer}>
                 <Plus className="w-4 h-4" />
                 Add FAQs
               </Button>
@@ -1046,7 +1050,7 @@ const extraKeys = records.length > 0
                   <HelpCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="text-sm font-semibold text-muted-foreground">No FAQs defined for this product page yet.</p>
                   <p className="text-xs text-muted-foreground/75 mt-1">Click "Add FAQs" to create the first one.</p>
-                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1">
+                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1" disabled={isViewer}>
                     <Plus className="w-4 h-4" />
                     Create First FAQ
                   </Button>
@@ -1065,6 +1069,7 @@ const extraKeys = records.length > 0
                         onClick={() => handleDeleteFaq(faq.id)}
                         className="text-destructive hover:bg-destructive/10 h-8 w-8 shrink-0"
                         title="Delete FAQ"
+                        disabled={isViewer}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

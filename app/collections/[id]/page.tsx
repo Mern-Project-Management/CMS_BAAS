@@ -236,7 +236,7 @@ export default function CollectionDetailPage() {
 
   async function fetchRecords() {
     try {
-      const res = await fetch(`/api/data/${resolvedId}`);
+      const res = await fetch(`/api/data/${resolvedId}?_t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       console.log('Fetch records response:', json);
       if (json.success) {
@@ -363,7 +363,11 @@ export default function CollectionDetailPage() {
                       View and manage records for this collection
                     </CardDescription>
                   </div>
-                  <Button onClick={() => setIsRecordFormOpen(true)} className="gap-2">
+                  <Button 
+                    onClick={() => setIsRecordFormOpen(true)} 
+                    className="gap-2"
+                    disabled={user?.role === 'viewer'}
+                  >
                     <Plus className="w-4 h-4" />
                     Add New Record
                   </Button>

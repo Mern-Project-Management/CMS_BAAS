@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { Field } from '@/lib/types';
 import { RecordForm } from '@/components/record-form';
+import { useAuth } from '@/lib/auth-client';
 
 type RecordRow = {
   id: string;
@@ -74,6 +75,8 @@ export function PagesMetaTable({
   onAddNewClick,
 }: Props) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isViewer = user?.role === 'viewer';
   
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -433,6 +436,7 @@ export function PagesMetaTable({
                             onClick={() => openEdit(r)} 
                             className="h-8 w-8 hover:text-primary"
                             title="Edit Meta Info"
+                            disabled={isViewer}
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
@@ -441,7 +445,7 @@ export function PagesMetaTable({
                             size="icon" 
                             onClick={() => triggerDeleteMeta(r.id)} 
                             className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                            disabled={deletingId === r.id}
+                            disabled={isViewer || deletingId === r.id}
                             title="Delete SEO rule"
                           >
                             {deletingId === r.id ? (
@@ -657,7 +661,7 @@ export function PagesMetaTable({
               </DialogDescription>
             </div>
             {!addingFaq && (
-              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1">
+              <Button onClick={() => setAddingFaq(true)} size="sm" className="gap-1" disabled={isViewer}>
                 <Plus className="w-4 h-4" />
                 Add FAQs
               </Button>
@@ -696,7 +700,7 @@ export function PagesMetaTable({
                   <HelpCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="text-sm font-semibold text-muted-foreground">No FAQs defined for this page yet.</p>
                   <p className="text-xs text-muted-foreground/75 mt-1">Click "Add FAQs" to create the first one.</p>
-                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1">
+                  <Button onClick={() => setAddingFaq(true)} size="sm" className="mt-4 gap-1" disabled={isViewer}>
                     <Plus className="w-4 h-4" />
                     Create First FAQ
                   </Button>
@@ -715,6 +719,7 @@ export function PagesMetaTable({
                         onClick={() => triggerDeleteFaq(faq.id)}
                         className="text-destructive hover:bg-destructive/10 h-8 w-8 shrink-0"
                         title="Delete FAQ"
+                        disabled={isViewer}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
