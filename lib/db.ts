@@ -9,7 +9,8 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-export function oid(id: string) {
+export function oid(id: string | null | undefined): ObjectId | null {
+  if (!id) return null;
   try {
     return new ObjectId(id);
   } catch {
@@ -42,8 +43,11 @@ export async function resolveRelationCollectionName(relation: string | null | un
 
   // Otherwise, if the relation looks like an ObjectId, try to resolve to a collection name
   try {
-    const colDoc = await db.collection('collections').findOne({ _id: oid(String(relation)) });
-    if (colDoc && (colDoc as any).name) return (colDoc as any).name;
+    const idObj = oid(String(relation));
+    if (idObj) {
+      const colDoc = await db.collection('collections').findOne({ _id: idObj });
+      if (colDoc && (colDoc as any).name) return (colDoc as any).name;
+    }
   } catch (e) {
     // ignore
   }

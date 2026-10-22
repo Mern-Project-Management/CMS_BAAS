@@ -164,9 +164,9 @@ export async function POST(request: NextRequest) {
       
       let html = '';
       let loadTime = 0;
-      const errors = [];
-      const warnings = [];
-      const infos = [];
+      const errors: string[] = [];
+      const warnings: string[] = [];
+      const infos: string[] = [];
       
       try {
         const res = await fetch(pageUrl, { signal: AbortSignal.timeout(10000) });

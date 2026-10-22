@@ -221,7 +221,12 @@ export async function PATCH(request: NextRequest) {
       updateDoc.password = hashPassword(password);
     }
 
-    await usersCol.updateOne({ _id: oid(id) }, { $set: updateDoc });
+    const userOid = oid(id);
+    if (!userOid) {
+      return NextResponse.json({ success: false, error: 'Invalid user ID' }, { status: 400 });
+    }
+
+    await usersCol.updateOne({ _id: userOid }, { $set: updateDoc });
 
     return NextResponse.json({ success: true, message: 'User updated' });
   } catch (err) {

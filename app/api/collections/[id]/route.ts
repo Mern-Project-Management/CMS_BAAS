@@ -129,7 +129,7 @@ export async function DELETE(
     const result = await deleteCollection(id);
 
     if (result.error) {
-      return NextResponse.json({ success: false, error: result.error.message }, { status: 400 });
+      return NextResponse.json({ success: false, error: (result.error as any)?.message || 'Failed to delete collection' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, message: 'Collection deleted' }, { status: 200 });

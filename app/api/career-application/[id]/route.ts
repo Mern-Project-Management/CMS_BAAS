@@ -12,10 +12,11 @@ function corsHeaders() {
 // ── DELETE /api/career-application/[id] ───────────────────────────────
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { error } = await deleteRecord('career_applications', params.id);
+    const { id } = await params;
+    const { error } = await deleteRecord('career_applications', id);
     if (error) {
       return NextResponse.json(
         { success: false, error: 'Failed to delete application' },
@@ -38,11 +39,12 @@ export async function DELETE(
 // ── PATCH /api/career-application/[id] ────────────────────────────────
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const { error } = await updateRecord('career_applications', params.id, body);
+    const { error } = await updateRecord('career_applications', id, body);
     if (error) {
       return NextResponse.json(
         { success: false, error: 'Failed to update application' },

@@ -46,8 +46,16 @@ export async function PATCH(request: NextRequest) {
     const db = await getDb();
     const usersCol = db.collection('users');
 
+    const userOid = oid(session.id);
+    if (!userOid) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid user session' } as ApiResponse<null>,
+        { status: 400 }
+      );
+    }
+
     // Fetch current user to verify current password if changing password
-    const userDoc = await usersCol.findOne({ _id: oid(session.id) });
+    const userDoc = await usersCol.findOne({ _id: userOid });
     if (!userDoc) {
       return NextResponse.json(
         { success: false, error: 'User not found' } as ApiResponse<null>,
@@ -64,7 +72,7 @@ export async function PATCH(request: NextRequest) {
       // Check username uniqueness (excluding self)
       const existing = await usersCol.findOne({
         username: username.trim(),
-        _id: { $ne: oid(session.id) },
+        _id: { $ne: userOid },
       });
       if (existing) {
         return NextResponse.json(
@@ -79,7 +87,7 @@ export async function PATCH(request: NextRequest) {
       // Check email uniqueness (excluding self)
       const existing = await usersCol.findOne({
         email: email.trim().toLowerCase(),
-        _id: { $ne: oid(session.id) },
+        _id: { $ne: userOid },
       });
       if (existing) {
         return NextResponse.json(
@@ -113,7 +121,7 @@ export async function PATCH(request: NextRequest) {
       updates.password = hashPassword(newPassword);
     }
 
-    await usersCol.updateOne({ _id: oid(session.id) }, { $set: updates });
+    await usersCol.updateOne({ _id: userOid }, { $set: updates });
 
     return NextResponse.json(
       {

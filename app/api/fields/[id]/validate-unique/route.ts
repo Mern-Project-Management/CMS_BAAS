@@ -39,7 +39,15 @@ export async function GET(
       );
     }
 
-    const collection = await db.collection('collections').findOne({ _id: oid(field.collection_id) });
+    const colOid = oid(field.collection_id);
+    if (!colOid) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid collection ID' } as ApiResponse<null>,
+        { status: 400 }
+      );
+    }
+
+    const collection = await db.collection('collections').findOne({ _id: colOid });
     if (!collection) {
       return NextResponse.json(
         { success: false, error: 'Collection not found' } as ApiResponse<null>,

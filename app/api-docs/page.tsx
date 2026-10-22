@@ -679,7 +679,7 @@ export default function ApiDocsPage() {
     if (selectedSource !== 'All' && apiEndpoints.length > 0) {
       // Check if current category is still valid
       const categoryStillValid = apiEndpoints.some((e: ApiEndpoint) => 
-        e.category === selectedCategory && (selectedSource === 'All' || e.source === selectedSource)
+        e.category === selectedCategory && e.source === selectedSource
       );
       if (!categoryStillValid) {
         setSelectedCategory('All');

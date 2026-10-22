@@ -505,7 +505,7 @@ export default function CollectionDetailPage() {
                     <PagesMetaTable
                       collectionId={collectionId}
                       fields={fields}
-                      records={records}
+                      records={records as any}
                       onDelete={() => setRecordRefresh((p) => p + 1)}
                       onUpdate={() => setRecordRefresh((p) => p + 1)}
                       onAddNewClick={() => setIsRecordFormOpen(true)}

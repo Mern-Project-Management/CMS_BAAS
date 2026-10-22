@@ -13,7 +13,7 @@ export async function PATCH(
     const body = await request.json();
 
     if (Array.isArray(body.dropdown_options)) {
-      const hasInvalidChars = body.dropdown_options.some(opt => 
+      const hasInvalidChars = body.dropdown_options.some((opt: any) => 
         typeof opt === 'string' && /<[^>]*>/i.test(opt)
       );
       if (hasInvalidChars) {
