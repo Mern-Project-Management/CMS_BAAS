@@ -110,10 +110,10 @@ export const sendContactEmail = async (data: { name: string; email: string; serv
         <p><span class="details-label">Response Time:</span> Within 24-48 Business Hours</p>
       </div>
       <p>If you have any additional information to share or immediate questions, please feel free to reply directly to this email.</p>
-      <p style="margin-top: 30px; margin-bottom: 0;">Best Regards,<br><strong style="color: #18181b;">The CROWN Packaging Team</strong></p>
+      <p style="margin-top: 30px; margin-bottom: 0;">Best Regards,<br><strong style="color: #18181b;">The Wiretex Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} CROWN Packaging. All rights reserved.<br>
+      &copy; ${new Date().getFullYear()} Wiretex. All rights reserved.<br>
       This is an automated confirmation email.
     </div>
   </div>
@@ -144,7 +144,7 @@ export const sendContactEmail = async (data: { name: string; email: string; serv
 
     // Fetch Client Auto-Reply Template
     const clientTemplate = await db.collection('email_templates').findOne({ name: "Client Inquiry Auto-Reply" });
-    let clientSubject = clientTemplate?.subject || "Thank You for Your Inquiry - CROWN Packaging";
+    let clientSubject = clientTemplate?.subject || "Thank You for Your Inquiry - Wiretex";
     let clientHtml = clientTemplate?.html_content || defaultClientHtml;
 
     Object.entries(vars).forEach(([key, value]) => {

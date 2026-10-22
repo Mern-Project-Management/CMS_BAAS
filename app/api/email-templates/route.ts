@@ -77,7 +77,7 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
   },
   {
     name: "Client Inquiry Auto-Reply",
-    subject: "Thank You for Your Inquiry - CROWN Packaging",
+    subject: "Thank You for Your Inquiry - Wiretex",
     variables: ["name", "email", "service_id"],
     is_default: true,
     html_content: `<!DOCTYPE html>
@@ -117,10 +117,10 @@ const defaultTemplates: Omit<EmailTemplate, '_id' | 'id'>[] = [
 
       <p>If you have any additional information to share or immediate questions, please feel free to reply directly to this email. We value your interest and look forward to assisting you.</p>
       
-      <p style="margin-top: 30px; margin-bottom: 0;">Best Regards,<br><strong style="color: #18181b;">The CROWN Packaging Team</strong></p>
+      <p style="margin-top: 30px; margin-bottom: 0;">Best Regards,<br><strong style="color: #18181b;">The Wiretex Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} CROWN Packaging. All rights reserved.<br>
+      &copy; ${new Date().getFullYear()} Wiretex. All rights reserved.<br>
       This is an automated confirmation email.
     </div>
   </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendContactEmail } from '@/lib/mail';
-import { createRecord , getRecords  } from '@/lib/db';
+import { sendContactEmail, getTransporter } from '@/lib/mail';
+import { createRecord, getRecords } from '@/lib/db';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -191,12 +191,12 @@ const clientHtmlContent = (data: CareerApplicationData) => `
 
         <div class="cta">
           <p class="cta-text">Have questions about the position?</p>
-          <a href="mailto:harshit.dhodi2108@gmail.com" class="cta-button">Contact HR</a>
+          <a href="mailto:${process.env.SMTP_USER || 'careers@example.com'}" class="cta-button">Contact HR</a>
         </div>
       </div>
       <div class="footer">
-        This is an automated confirmation from Your Company.<br>
-        &copy; ${new Date().getFullYear()} Your Company. All rights reserved.
+        This is an automated confirmation from Wiretex.<br>
+        &copy; ${new Date().getFullYear()} Wiretex. All rights reserved.
       </div>
     </div>
   </body>
@@ -303,9 +303,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Send emails
-    const adminEmail = process.env.EMAIL_USER || 'harshit.dhodi2108@gmail.com';
-    const adminPass = process.env.EMAIL_PASS || 'jnkb ytek ilqm ryfm';
-
     try {
       // Admin notification
       await sendContactEmail({
@@ -316,28 +313,16 @@ export async function POST(request: NextRequest) {
       });
 
       // Client thank you email (custom template)
-      await (async () => {
-        // @ts-ignore
-        const nodemailer = await import('nodemailer');
-        const transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 465,
-          secure: true,
-          auth: {
-            user: adminEmail,
-            pass: adminPass,
-          },
-        });
-
+      const { transporter, user } = await getTransporter();
+      if (user && transporter) {
         await transporter.sendMail({
-          from: `"Your Company" <${adminEmail}>`,
+          from: `"Wiretex Careers" <${user}>`,
           to: email,
           subject: `Thank you for your application - ${position}`,
-          replyTo: adminEmail,
+          replyTo: user,
           html: clientHtmlContent(body),
         });
-      })();
-
+      }
     } catch (emailError: any) {
       console.error('Failed to send emails:', emailError);
     }

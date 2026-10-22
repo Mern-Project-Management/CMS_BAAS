@@ -2,14 +2,14 @@
  * Seed a default "users" collection and basic fields if they do not already exist.
  *
  * Usage:
- *   MONGODB_URI="..." MONGODB_DB="jayshree_blogs" npm run seed:default-user
+ *   MONGODB_URI="..." MONGODB_DB="CMS" npm run seed:default-user
  */
 
 require('dotenv').config({ path: '.env' });
 const { MongoClient, ObjectId } = require('mongodb');
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || 'jayshree_blogs';
+const dbName = process.env.MONGODB_DB || 'CMS';
 
 if (!uri) {
   console.error('Missing MONGODB_URI. Set it in your environment before running the seed.');
