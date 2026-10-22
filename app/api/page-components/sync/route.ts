@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-// Label corrections — source of truth from the bexon page comments
+// Label corrections — section layout labels
 const LABEL_CORRECTIONS: Record<string, Record<string, string>> = {
   'home-02': {
     'Hero Banner': 'Hero Banner',

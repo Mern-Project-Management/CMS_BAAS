@@ -100,7 +100,7 @@ export function AdminThemeLoader() {
 
     // 1. Check local storage first (fastest application)
     try {
-      const saved = localStorage.getItem('bexon-colors');
+      const saved = localStorage.getItem('wiretex-colors');
       if (saved) {
         const parsed = JSON.parse(saved);
         applyAdminColors(parsed);

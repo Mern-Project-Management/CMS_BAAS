@@ -167,7 +167,7 @@ export default function ColorManagerPage() {
           }
         }
         // Fallback to localStorage if API fails
-        const saved = localStorage.getItem('bexon-colors');
+        const saved = localStorage.getItem('wiretex-colors');
         if (saved) {
           const parsed = JSON.parse(saved);
           const merged = mergeColors(parsed);
@@ -178,7 +178,7 @@ export default function ColorManagerPage() {
       } catch (e) {
         console.error('Failed to load colors:', e);
         // Fallback to localStorage
-        const saved = localStorage.getItem('bexon-colors');
+        const saved = localStorage.getItem('wiretex-colors');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
@@ -274,7 +274,7 @@ export default function ColorManagerPage() {
         const data = await response.json();
         if (data.success) {
           // Also save to localStorage for frontend preview
-          localStorage.setItem('bexon-colors', JSON.stringify(colors));
+          localStorage.setItem('wiretex-colors', JSON.stringify(colors));
           setSavedColors(colors);
           applyColors(colors);
           setDirty(false);
@@ -287,7 +287,7 @@ export default function ColorManagerPage() {
       }
 
       // Fallback to localStorage if API fails
-      localStorage.setItem('bexon-colors', JSON.stringify(colors));
+      localStorage.setItem('wiretex-colors', JSON.stringify(colors));
       setSavedColors(colors);
       applyColors(colors);
       setDirty(false);
@@ -298,7 +298,7 @@ export default function ColorManagerPage() {
     } catch (err) {
       console.error('Save error:', err);
       // Fallback to localStorage
-      localStorage.setItem('bexon-colors', JSON.stringify(colors));
+      localStorage.setItem('wiretex-colors', JSON.stringify(colors));
       setSavedColors(colors);
       applyColors(colors);
       setDirty(false);
@@ -325,7 +325,7 @@ export default function ColorManagerPage() {
       });
 
       if (response.ok) {
-        localStorage.removeItem('bexon-colors');
+        localStorage.removeItem('wiretex-colors');
         setDirty(false);
         toast({
           title: 'Colors reset',
@@ -333,7 +333,7 @@ export default function ColorManagerPage() {
         });
       } else {
         // Fallback
-        localStorage.removeItem('bexon-colors');
+        localStorage.removeItem('wiretex-colors');
         setDirty(false);
         toast({
           title: 'Colors reset (fallback)',
@@ -342,7 +342,7 @@ export default function ColorManagerPage() {
       }
     } catch (err) {
       console.error('Reset error:', err);
-      localStorage.removeItem('bexon-colors');
+      localStorage.removeItem('wiretex-colors');
       setDirty(false);
       toast({
         title: 'Colors reset (fallback)',
